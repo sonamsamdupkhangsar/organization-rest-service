@@ -1,6 +1,5 @@
 package me.sonam.organization.handler;
 
-import me.sonam.organization.repo.entity.Organization;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
