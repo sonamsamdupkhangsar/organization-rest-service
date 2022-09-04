@@ -1,4 +1,4 @@
-package me.sonam.account;
+package me.sonam.organization;
 
 import lombok.extern.java.Log;
 import org.junit.Test;

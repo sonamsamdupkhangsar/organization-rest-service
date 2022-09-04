@@ -1,9 +1,10 @@
-package me.sonam.account;
+package me.sonam.organization;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import me.sonam.organization.handler.Handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springdoc.core.annotations.RouterOperation;
@@ -30,27 +31,29 @@ public class Router {
     @Bean
     @RouterOperations(
             {
-                    @RouterOperation(path = "/account-api/active/{userId}"
+                    @RouterOperation(path = "/organizations"
                     , produces = {
                         MediaType.APPLICATION_JSON_VALUE}, method= RequestMethod.GET,
                          operation = @Operation(operationId="activeUserId", responses = {
                             @ApiResponse(responseCode = "200", description = "successful operation"),
                                  @ApiResponse(responseCode = "400", description = "invalid user id")}
-                    )),
-                    @RouterOperation(path = "/account-api/activate/{userId}"
-                            , produces = {
-                            MediaType.APPLICATION_JSON_VALUE}, method= RequestMethod.GET,
-                            operation = @Operation(operationId="activeUserId", responses = {
-                                    @ApiResponse(responseCode = "200", description = "successful operation"),
-                                    @ApiResponse(responseCode = "400", description = "invalid user id")}
-                            ))
+                    ))
             }
     )
-    public RouterFunction<ServerResponse> route(AccountHandler handler) {
+    public RouterFunction<ServerResponse> route(Handler handler) {
         LOG.info("building router function");
-        return RouterFunctions.route(GET("/active/{userId}").and(accept(MediaType.APPLICATION_JSON)),
-                handler::isAccountActive)
-                .andRoute(POST("activate/{userId}")
-                .and(accept(MediaType.APPLICATION_JSON)), handler::activateAccount);
+        return RouterFunctions.route(POST("/organizations").and(accept(MediaType.APPLICATION_JSON)),
+                handler::createOrganization)
+                .andRoute(PUT("/organizations")
+                        .and(accept(MediaType.APPLICATION_JSON)), handler::updateOrganization)
+                .andRoute(GET("/organizations")
+                        .and(accept(MediaType.APPLICATION_JSON)), handler::getOrganizations)
+                .andRoute(DELETE("/organizations/{organizationId}")
+                        .and(accept(MediaType.APPLICATION_JSON)), handler::deleteOrganization)
+                .andRoute(PUT("/organizations/users")
+                        .and(accept(MediaType.APPLICATION_JSON)), handler::updateOrganizationUsers)
+                .andRoute(GET("/organizations/{organizationId}/users")
+                .and(accept(MediaType.APPLICATION_JSON)), handler::getOrganizationUsers);
+
     }
 }
