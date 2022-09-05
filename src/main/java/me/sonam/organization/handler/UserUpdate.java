@@ -4,13 +4,15 @@ import java.util.UUID;
 
 public class UserUpdate {
     public enum UpdateAction {
-        add, delete
+        add, update, delete
     }
     private UUID userId;
     private UpdateAction update;
+    private String userRole;
 
-    public UserUpdate(UUID userId, String update) {
+    public UserUpdate(UUID userId, String userRole, String update) {
         this.update = UpdateAction.valueOf(update);
+        this.userRole = userRole;
         this.userId = userId;
     }
 
@@ -20,5 +22,9 @@ public class UserUpdate {
 
     public UpdateAction getUpdate() {
         return this.update;
+    }
+
+    public String getUserRole() {
+        return this.userRole;
     }
 }

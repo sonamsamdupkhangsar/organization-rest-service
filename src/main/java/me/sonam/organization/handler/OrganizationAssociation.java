@@ -13,10 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.UUID;
-
-import static java.util.stream.Collectors.toList;
 
 @Service
 public class OrganizationAssociation implements OrganizationBehavior {
@@ -41,8 +38,15 @@ public class OrganizationAssociation implements OrganizationBehavior {
     public Mono<String> createOrganization(Mono<OrganizationBody> organizationBodyMono) {
         LOG.info("create application");
 
-        return organizationBodyMono.flatMap(organizationBody -> organizationRepository.save(new Organization(null, organizationBody.getName())))
-                .map(organization -> organization.getId())
+        return organizationBodyMono.flatMap(organizationBody ->
+                organizationRepository.save(new Organization(null, organizationBody.getName(),
+                        organizationBody.getCreatorUserId())))
+                .map(organization ->
+                        new OrganizationUser
+                                (null,organization.getId(), organization.getCreatorUserId(),
+                                        OrganizationUser.RoleNamesEnum.admin.name()))
+                .flatMap(organizationUser -> organizationUserRepository.save(organizationUser))
+                .map(organizationUser -> organizationUser.getOrganizationId())
                 .flatMap(uuid -> Mono.just(uuid.toString()));
     }
 
@@ -50,7 +54,9 @@ public class OrganizationAssociation implements OrganizationBehavior {
     public Mono<String> updateOrganization(Mono<OrganizationBody> organizationBodyMono) {
         LOG.info("update application");
 
-        return organizationBodyMono.flatMap(organizationBody -> organizationRepository.save(new Organization(organizationBody.getId(), organizationBody.getName()))
+        return organizationBodyMono.flatMap(organizationBody ->
+                organizationRepository.save(new Organization(organizationBody.getId(),
+                        organizationBody.getName(), organizationBody.getCreatorUserId()))
                 .flatMap(organization -> Mono.just(organization.getId().toString()))
         );
     }
@@ -74,7 +80,8 @@ public class OrganizationAssociation implements OrganizationBehavior {
                             .doOnNext(aBoolean -> LOG.info("exists by orgIdAndUserId already?: {}", aBoolean))
                             .filter(aBoolean -> !aBoolean)
                             .map(aBoolean -> new OrganizationUser
-                                    (null, organizationUserBody.getOrganizationId(), userUpdate.getUserId()))
+                                    (null, organizationUserBody.getOrganizationId(),
+                                            userUpdate.getUserId(), userUpdate.getUserRole()))
                             .flatMap(organizationUser -> organizationUserRepository.save(organizationUser))
                             .subscribe(organizationUser -> LOG.info("saved organizationUser"));
 
@@ -92,6 +99,15 @@ public class OrganizationAssociation implements OrganizationBehavior {
                                 organizationUserBody.getOrganizationId(), userUpdate.getUserId())
                                 .subscribe(integer -> LOG.info("delted by organizationId and userId"));
                     }
+                }
+                else if (userUpdate.getUpdate().equals(UserUpdate.UpdateAction.update)) {
+                    organizationUserRepository.findByOrganizationIdAndUserId(
+                            organizationUserBody.getOrganizationId(), userUpdate.getUserId())
+                            .switchIfEmpty(Mono.just(
+                                    new OrganizationUser(null, organizationUserBody.getOrganizationId(),
+                                            userUpdate.getUserId(), userUpdate.getUserRole())))
+                            .flatMap(organizationUser -> organizationUserRepository.save(organizationUser))
+                            .subscribe(organizationUser -> LOG.info("updated orgainzationUser"));
                 }
                  else {
                     throw new OrgException("UserUpdate action invalid: " + userUpdate.getUpdate().name());

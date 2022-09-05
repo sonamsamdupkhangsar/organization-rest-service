@@ -6,6 +6,7 @@ import me.sonam.organization.handler.UserUpdate;
 import me.sonam.organization.repo.OrganizationRepository;
 import me.sonam.organization.repo.OrganizationUserRepository;
 import me.sonam.organization.repo.entity.Organization;
+import me.sonam.organization.repo.entity.OrganizationUser;
 import org.junit.Before;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -59,7 +60,8 @@ public class OrganizationRestServiceTest {
     @Test
     public void createOrganization() {
         LOG.info("create organization");
-        OrganizationBody organizationBody = new OrganizationBody(null, "Baggy Pants Company");
+        UUID creatorId = UUID.randomUUID();
+        OrganizationBody organizationBody = new OrganizationBody(null, "Baggy Pants Company", creatorId);
         EntityExchangeResult<String> result = webTestClient.post().uri("/organizations").bodyValue(organizationBody)
                 .exchange().expectStatus().isCreated().expectBody(String.class).returnResult();
 
@@ -78,7 +80,7 @@ public class OrganizationRestServiceTest {
 
         LOG.info("page result contains: {}", result);
 
-        organizationBody = new OrganizationBody(id, "New Name");
+        organizationBody = new OrganizationBody(id, "New Name", creatorId);
         result = webTestClient.put().uri("/organizations").bodyValue(organizationBody)
                 .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
 
@@ -96,9 +98,9 @@ public class OrganizationRestServiceTest {
         organizationRepository.existsById(id).subscribe(aBoolean -> LOG.info("should be false after deletion: {}",aBoolean));
 
         //UID id, UUID organizationId, List< UserUpdate > userUpdates
-        UserUpdate userUpdates1 = new UserUpdate(UUID.randomUUID(), UserUpdate.UpdateAction.add.name());
-        UserUpdate userUpdates2 = new UserUpdate(UUID.randomUUID(), UserUpdate.UpdateAction.add.name());
-        UserUpdate userUpdates3 = new UserUpdate(UUID.randomUUID(), UserUpdate.UpdateAction.add.name());
+        UserUpdate userUpdates1 = new UserUpdate(UUID.randomUUID(), OrganizationUser.RoleNamesEnum.user.name(), UserUpdate.UpdateAction.add.name());
+        UserUpdate userUpdates2 = new UserUpdate(UUID.randomUUID(), OrganizationUser.RoleNamesEnum.user.name(), UserUpdate.UpdateAction.add.name());
+        UserUpdate userUpdates3 = new UserUpdate(UUID.randomUUID(), OrganizationUser.RoleNamesEnum.user.name(), UserUpdate.UpdateAction.add.name());
 
         //leave null for id to generate its own
         OrganizationUserBody organizationUserBody = new OrganizationUserBody(null, id,
@@ -110,8 +112,8 @@ public class OrganizationRestServiceTest {
         LOG.info("result: {}", result.getResponseBody());
 
         LOG.info("delete 2 users and leave only 1 to organization");
-        userUpdates1 = new UserUpdate(userUpdates1.getUserId(), UserUpdate.UpdateAction.add.name());
-        userUpdates2 = new UserUpdate(userUpdates2.getUserId(), UserUpdate.UpdateAction.delete.name());
+        userUpdates1 = new UserUpdate(userUpdates1.getUserId(), OrganizationUser.RoleNamesEnum.user.name(), UserUpdate.UpdateAction.add.name());
+        userUpdates2 = new UserUpdate(userUpdates2.getUserId(), OrganizationUser.RoleNamesEnum.admin.name(), UserUpdate.UpdateAction.delete.name());
       //  userUpdates3 = new UserUpdate(userUpdates3.getUserId(), UserUpdate.UpdateAction.delete.name());
 
         //leave id null but pass in organization id 'id'

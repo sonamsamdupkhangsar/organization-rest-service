@@ -7,10 +7,15 @@ import org.springframework.data.domain.Persistable;
 import java.util.UUID;
 
 public class OrganizationUser implements Persistable<UUID> {
+    public enum RoleNamesEnum {
+        admin, user
+    }
+
     @Id
     private UUID id;
     private UUID organizationId;
     private UUID userId;
+    private String userRole;
     @Transient
     private boolean isNew;
 
@@ -21,10 +26,11 @@ public class OrganizationUser implements Persistable<UUID> {
                 ", organizationId=" + organizationId +
                 ", userId=" + userId +
                 ", isNew=" + isNew +
+                ", userRole='" + userRole +"'" +
                 '}';
     }
 
-    public OrganizationUser(UUID id, UUID organizationId, UUID userId) {
+    public OrganizationUser(UUID id, UUID organizationId, UUID userId, String userRole) {
         if (this.id != null) {
             this.id = id;
             this.isNew = false;
@@ -35,10 +41,18 @@ public class OrganizationUser implements Persistable<UUID> {
         }
         this.organizationId = organizationId;
         this.userId = userId;
+        this.userRole = userRole;
     }
 
     public UUID getUserId() {
         return userId;
+    }
+
+    public String getUserRole() {
+        return this.userRole;
+    }
+    public UUID getOrganizationId() {
+        return this.organizationId;
     }
 
     @Override

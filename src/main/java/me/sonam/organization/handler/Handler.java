@@ -47,6 +47,7 @@ public class Handler {
 
     public Mono<ServerResponse> updateOrganization(ServerRequest serverRequest) {
         LOG.info("update organization");
+        //allow if user is admin
 
         return organizationBehavior.updateOrganization(serverRequest.bodyToMono(OrganizationBody.class))
                 .flatMap(s -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(s))

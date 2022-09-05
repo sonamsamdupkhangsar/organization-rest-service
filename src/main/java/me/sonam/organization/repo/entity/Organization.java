@@ -10,10 +10,11 @@ public class Organization implements Persistable<UUID> {
     @Id
     private UUID id;
     private String name;
+    private UUID creatorUserId;
     @Transient
     private boolean isNew;
 
-    public Organization(UUID id, String name) {
+    public Organization(UUID id, String name, UUID creatorUserId) {
         if (id != null) {
             this.id = id;
             this.isNew = false;
@@ -23,11 +24,15 @@ public class Organization implements Persistable<UUID> {
             this.id = UUID.randomUUID();
         }
         this.name = name;
-
+        this.creatorUserId = creatorUserId;
     }
 
     public String getName() {
         return name;
+    }
+
+    public UUID getCreatorUserId() {
+        return this.creatorUserId;
     }
 
     @Override
@@ -46,6 +51,7 @@ public class Organization implements Persistable<UUID> {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", isNew=" + isNew +
+                ", creatorUserId=" + creatorUserId +
                 '}';
     }
 }

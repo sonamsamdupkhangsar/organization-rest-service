@@ -12,6 +12,7 @@ public interface OrganizationUserRepository extends ReactiveCrudRepository<Organ
     Flux<OrganizationUser> findByOrganizationId(UUID organizationId, Pageable pageable);
     Mono<Integer> deleteByOrganizationId(UUID organizationId);
     Mono<Boolean> existsByOrganizationIdAndUserId(UUID organizationId, UUID userId);
+    Mono<OrganizationUser> findByOrganizationIdAndUserId(UUID organizationId, UUID userId);
     Mono<Integer> deleteByOrganizationIdAndUserId(UUID organizationId, UUID userId);
     Mono<Long> countByOrganizationId(UUID organizationId);
 }
