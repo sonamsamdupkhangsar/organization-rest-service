@@ -25,4 +25,5 @@ public class OrganizationBody {
     public UUID getCreatorUserId() {
         return this.creatorUserId;
     }
+
 }

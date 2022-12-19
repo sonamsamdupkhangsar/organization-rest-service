@@ -33,6 +33,18 @@ public class Handler {
                 });
     }
 
+    public Mono<ServerResponse> getOrganizationById(ServerRequest serverRequest) {
+        LOG.info("get organization by id");
+
+        return organizationBehavior.getOrganizationById(UUID.fromString(serverRequest.pathVariable("organizationId")))
+                .flatMap(s -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(s))
+                .onErrorResume(throwable -> {
+                    LOG.error("get organization by id failed", throwable);
+                    return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(throwable.getMessage());
+                });
+    }
+
     public Mono<ServerResponse> createOrganization(ServerRequest serverRequest) {
         LOG.info("create organization");
 
@@ -73,7 +85,7 @@ public class Handler {
     public Mono<ServerResponse> updateOrganizationUsers(ServerRequest serverRequest) {
         LOG.info("update organization user");
 
-        return organizationBehavior.updateOrganizationUsers(serverRequest.bodyToMono(OrganizationUserBody.class))
+        return organizationBehavior.updateOrganizationUsers(serverRequest.bodyToFlux(OrganizationUserBody.class))
                 .flatMap(s -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(s))
                 .onErrorResume(throwable -> {
                     LOG.error("update organization user failed", throwable);

@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;
@@ -35,15 +36,22 @@ public class OrganizationAssociation implements OrganizationBehavior {
     }
 
     @Override
+    public Mono<Organization> getOrganizationById(UUID organizationId) {
+        LOG.info("find organization by id");
+        return organizationRepository.findById(organizationId).
+        switchIfEmpty(Mono.error(new OrgException("No organization found with id")));
+    }
+
+    @Override
     public Mono<String> createOrganization(Mono<OrganizationBody> organizationBodyMono) {
         LOG.info("create application");
 
         return organizationBodyMono.flatMap(organizationBody ->
                 organizationRepository.save(new Organization(null, organizationBody.getName(),
                         organizationBody.getCreatorUserId())))
-                .map(organization ->
+                .map(organization->
                         new OrganizationUser
-                                (null,organization.getId(), organization.getCreatorUserId(),
+                                (null, organization.getId(), organization.getCreatorUserId(),
                                         OrganizationUser.RoleNamesEnum.admin.name()))
                 .flatMap(organizationUser -> organizationUserRepository.save(organizationUser))
                 .map(organizationUser -> organizationUser.getOrganizationId())
@@ -68,52 +76,64 @@ public class OrganizationAssociation implements OrganizationBehavior {
     }
 
     @Override
-    public Mono<String> updateOrganizationUsers(Mono<OrganizationUserBody> organizationUserBodyMono) {
-        LOG.info("updated users in organization");
+    public Mono<String> updateOrganizationUsers(Flux<OrganizationUserBody> organizationUserBodyFlux) {
+        LOG.info("update users in organization");
 
-        return organizationUserBodyMono.doOnNext(organizationUserBody -> {
+        return organizationUserBodyFlux.doOnNext(organizationUserBody -> {
             LOG.info("save organization user updates");
-             organizationUserBody.getUserUpdates().forEach(userUpdate -> {
-                if (userUpdate.getUpdate().equals(UserUpdate.UpdateAction.add)) {
-                    organizationUserRepository.existsByOrganizationIdAndUserId(
-                            organizationUserBody.getOrganizationId(), userUpdate.getUserId())
-                            .doOnNext(aBoolean -> LOG.info("exists by orgIdAndUserId already?: {}", aBoolean))
-                            .filter(aBoolean -> !aBoolean)
-                            .map(aBoolean -> new OrganizationUser
-                                    (null, organizationUserBody.getOrganizationId(),
-                                            userUpdate.getUserId(), userUpdate.getUserRole()))
-                            .flatMap(organizationUser -> organizationUserRepository.save(organizationUser))
-                            .subscribe(organizationUser -> LOG.info("saved organizationUser"));
 
+            organizationRepository.existsById(organizationUserBody.getOrganizationId()).
+                    switchIfEmpty(Mono.error(new OrgException("No organization found with organizationId: "
+                            + organizationUserBody.getOrganizationId())));
 
-                } else if (userUpdate.getUpdate().equals(UserUpdate.UpdateAction.delete)) {
-                    if (organizationUserBody.getId() != null) {
-                        organizationUserRepository.existsById(organizationUserBody.getId())
-                                .filter(aBoolean -> aBoolean)
-                                .map(aBoolean -> organizationUserRepository.deleteById(organizationUserBody.getId()))
-                                .subscribe(organizationUser -> LOG.info("deleted organizationUser"));
-                    }
-                    else {
-                        LOG.info("deleting using userId and orgId");
-                        organizationUserRepository.deleteByOrganizationIdAndUserId(
-                                organizationUserBody.getOrganizationId(), userUpdate.getUserId())
-                                .subscribe(integer -> LOG.info("delted by organizationId and userId"));
-                    }
+            if (organizationUserBody.getUpdateAction().equals(OrganizationUserBody.UpdateAction.add)) {
+                organizationUserRepository.existsByOrganizationIdAndUserId(
+                                organizationUserBody.getOrganizationId(), organizationUserBody.getUserId())
+                        .doOnNext(aBoolean -> LOG.info("exists by orgIdAndUserId already?: {}", aBoolean))
+                        .filter(aBoolean -> !aBoolean)
+                        .map(aBoolean -> new OrganizationUser
+                                (null, organizationUserBody.getOrganizationId(), organizationUserBody.getUserId(),
+                                        organizationUserBody.getUserRole()))
+                        .flatMap(organizationUser -> organizationUserRepository.save(organizationUser))
+                        .subscribe(organizationUser -> LOG.info("saved organizationUser"));
+            }
+            else if (organizationUserBody.getUpdateAction().equals(OrganizationUserBody.UpdateAction.delete)) {
+                if (organizationUserBody.getId() != null) {
+                    organizationUserRepository.existsById(organizationUserBody.getId())
+                            .filter(aBoolean -> aBoolean)
+                            .map(aBoolean -> organizationUserRepository.deleteById(organizationUserBody.getId()))
+                            .subscribe(organizationUser -> LOG.info("deleted organizationUser"));
                 }
-                else if (userUpdate.getUpdate().equals(UserUpdate.UpdateAction.update)) {
-                    organizationUserRepository.findByOrganizationIdAndUserId(
-                            organizationUserBody.getOrganizationId(), userUpdate.getUserId())
-                            .switchIfEmpty(Mono.just(
-                                    new OrganizationUser(null, organizationUserBody.getOrganizationId(),
-                                            userUpdate.getUserId(), userUpdate.getUserRole())))
-                            .flatMap(organizationUser -> organizationUserRepository.save(organizationUser))
-                            .subscribe(organizationUser -> LOG.info("updated orgainzationUser"));
+                else {
+                    LOG.info("deleting using userId and appId");
+                    organizationUserRepository.deleteByOrganizationIdAndUserId(
+                                    organizationUserBody.getOrganizationId(), organizationUserBody.getUserId())
+                            .subscribe(rows -> LOG.info("deleted by organizationId and userId: {}", rows));
                 }
-                 else {
-                    throw new OrgException("UserUpdate action invalid: " + userUpdate.getUpdate().name());
+            }
+            else if (organizationUserBody.getUpdateAction().equals(OrganizationUserBody.UpdateAction.update)) {
+                if (organizationUserBody.getId() == null) {
+                    LOG.warn("organizationUserId is null on update action");
                 }
-            });
-        }).thenReturn("organization update done");
+
+                //in update the organizationUser with appId and userId must existacc
+                organizationUserRepository.findByOrganizationIdAndUserId(
+                                organizationUserBody.getOrganizationId(), organizationUserBody.getUserId())
+                        .doOnNext(organizationUser -> LOG.info("organizationUser found in update is; {}", organizationUser))
+                        .map(organizationUser ->  new OrganizationUser(organizationUser.getId()
+                                , organizationUser.getOrganizationId(), organizationUser.getUserId()
+                                , organizationUserBody.getUserRole()))
+                        .doOnNext(organizationUser -> {
+                            organizationUserRepository.countByOrganizationId(organizationUser.getOrganizationId()).subscribe(aLong -> LOG.info("count of organizationUser: {}", aLong));
+
+                        })
+                        .flatMap(organizationUser -> organizationUserRepository.save(organizationUser))
+                        .subscribe(organizationUser -> LOG.info("updated organizationUser"));
+            }
+            else {
+                throw new OrgException("UserUpdate action invalid: " + organizationUserBody.getUpdateAction().name());
+            }
+        }).then(Mono.just("applicationUser update done"));
     }
 
     @Override

@@ -10,7 +10,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.r2dbc.connection.init.ConnectionFactoryInitializer;
 import org.springframework.r2dbc.connection.init.ResourceDatabasePopulator;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"me.sonam"}) // this is so that jwt-validator config is scanned plus this package
 public class Application {
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
     public static void main(String[] args) {
