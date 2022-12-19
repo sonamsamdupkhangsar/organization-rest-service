@@ -26,6 +26,7 @@ jobs:
         run: mvn -s settings.xml --batch-mode deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
       - name: Publish Pacts
         run: mvn pact:publish -Dpactbrokerurl=${{ secrets.PACTBROKER_URL }} -Dpactbrokerusername=${{ secrets.PACTBROKER_USERNAME }} -Dpactbrokerpassword=${{ secrets.PACTBROKER_PASSWORD }}
