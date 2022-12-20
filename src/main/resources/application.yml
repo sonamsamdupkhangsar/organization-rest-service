@@ -24,3 +24,6 @@ spring:
     password: ${POSTGRES_PASSWORD}
     properties:
       sslMode: REQUIRE
+
+permitPaths: /api/health/*
+jwt-rest-service-public-key-id: http://jwt-rest-service-mychart.backend.svc.cluster.local:80/jwt-rest-service/publickeys/{keyId}
