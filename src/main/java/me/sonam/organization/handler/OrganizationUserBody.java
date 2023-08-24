@@ -1,6 +1,5 @@
 package me.sonam.organization.handler;
 
-import java.util.List;
 import java.util.UUID;
 
 public class OrganizationUserBody {
@@ -11,14 +10,14 @@ public class OrganizationUserBody {
     private UUID organizationId;
 
     private UUID userId;
-    private String userRole;
+    private UUID positionId;
     private UpdateAction updateAction;
 
-    public OrganizationUserBody(UUID id, UUID organizationId, UUID userId, UpdateAction updateAction, String userRole) {
+    public OrganizationUserBody(UUID id, UUID organizationId, UUID userId, UpdateAction updateAction, UUID positionId) {
         this.id = id;
         this.organizationId = organizationId;
         this.userId = userId;
-        this.userRole = userRole;
+        this.positionId = positionId;
         this.updateAction = updateAction;
     }
 
@@ -35,8 +34,8 @@ public class OrganizationUserBody {
         return userId;
     }
 
-    public String getUserRole() {
-        return userRole;
+    public UUID getPositionId() {
+        return positionId;
     }
 
     public UpdateAction getUpdateAction() {

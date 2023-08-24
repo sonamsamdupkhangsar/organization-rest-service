@@ -1,5 +1,10 @@
-package me.sonam.organization.handler;
+package me.sonam.organization.handler.service;
 
+import me.sonam.organization.handler.OrgException;
+import me.sonam.organization.handler.OrganizationBehavior;
+import me.sonam.organization.handler.OrganizationBody;
+import me.sonam.organization.handler.OrganizationUserBody;
+import me.sonam.organization.repo.OrganizationPositionRepository;
 import me.sonam.organization.repo.OrganizationRepository;
 import me.sonam.organization.repo.OrganizationUserRepository;
 import me.sonam.organization.repo.entity.Organization;
@@ -25,6 +30,9 @@ public class OrganizationAssociation implements OrganizationBehavior {
 
     @Autowired
     private OrganizationUserRepository organizationUserRepository;
+
+    @Autowired
+    private OrganizationPositionRepository organizationPositionRepository;
 
     @Override
     public Mono<Page<Organization>> getOrganizations(Pageable pageable) {
@@ -52,7 +60,7 @@ public class OrganizationAssociation implements OrganizationBehavior {
                 .map(organization->
                         new OrganizationUser
                                 (null, organization.getId(), organization.getCreatorUserId(),
-                                        OrganizationUser.RoleNamesEnum.admin.name()))
+                                        null))
                 .flatMap(organizationUser -> organizationUserRepository.save(organizationUser))
                 .map(organizationUser -> organizationUser.getOrganizationId())
                 .flatMap(uuid -> Mono.just(uuid.toString()));
@@ -93,7 +101,7 @@ public class OrganizationAssociation implements OrganizationBehavior {
                         .filter(aBoolean -> !aBoolean)
                         .map(aBoolean -> new OrganizationUser
                                 (null, organizationUserBody.getOrganizationId(), organizationUserBody.getUserId(),
-                                        organizationUserBody.getUserRole()))
+                                        organizationUserBody.getPositionId()))
                         .flatMap(organizationUser -> organizationUserRepository.save(organizationUser))
                         .subscribe(organizationUser -> LOG.info("saved organizationUser"));
             }
@@ -122,7 +130,7 @@ public class OrganizationAssociation implements OrganizationBehavior {
                         .doOnNext(organizationUser -> LOG.info("organizationUser found in update is; {}", organizationUser))
                         .map(organizationUser ->  new OrganizationUser(organizationUser.getId()
                                 , organizationUser.getOrganizationId(), organizationUser.getUserId()
-                                , organizationUserBody.getUserRole()))
+                                , organizationUserBody.getPositionId()))
                         .doOnNext(organizationUser -> {
                             organizationUserRepository.countByOrganizationId(organizationUser.getOrganizationId()).subscribe(aLong -> LOG.info("count of organizationUser: {}", aLong));
 

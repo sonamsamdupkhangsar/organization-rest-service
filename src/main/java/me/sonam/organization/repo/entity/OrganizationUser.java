@@ -14,11 +14,11 @@ public class OrganizationUser implements Persistable<UUID> {
     private UUID id;
     private UUID organizationId;
     private UUID userId;
-    private String userRole;
+    private UUID positionId;
     @Transient
     private boolean isNew;
 
-    public OrganizationUser(UUID id, UUID organizationId, UUID userId, String userRole) {
+    public OrganizationUser(UUID id, UUID organizationId, UUID userId, UUID positionId) {
         if (id != null) {
             this.id = id;
             this.isNew = false;
@@ -29,7 +29,7 @@ public class OrganizationUser implements Persistable<UUID> {
         }
         this.organizationId = organizationId;
         this.userId = userId;
-        this.userRole = userRole;
+        this.positionId = positionId;
     }
 
     @Override
@@ -39,7 +39,7 @@ public class OrganizationUser implements Persistable<UUID> {
                 ", organizationId=" + organizationId +
                 ", userId=" + userId +
                 ", isNew=" + isNew +
-                ", userRole='" + userRole +"'" +
+                ", positionId='" + positionId +"'" +
                 '}';
     }
 
@@ -47,8 +47,8 @@ public class OrganizationUser implements Persistable<UUID> {
         return userId;
     }
 
-    public String getUserRole() {
-        return this.userRole;
+    public UUID getPositionId() {
+        return this.positionId;
     }
     public UUID getOrganizationId() {
         return this.organizationId;

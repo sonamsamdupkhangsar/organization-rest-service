@@ -7,11 +7,13 @@ public class OrganizationBody {
     private UUID id;
     private String name;
     private UUID creatorUserId;
+    private UUID positionId;
 
-    public OrganizationBody(UUID id, String name, UUID creatorUserId) {
+    public OrganizationBody(UUID id, String name, UUID creatorUserId, UUID positionId) {
         this.id = id;
         this.name = name;
         this.creatorUserId = creatorUserId;
+        this.positionId = positionId;
     }
 
     public UUID getId() {
@@ -25,5 +27,6 @@ public class OrganizationBody {
     public UUID getCreatorUserId() {
         return this.creatorUserId;
     }
+    public UUID getPositionId() {return this.positionId;}
 
 }

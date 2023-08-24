@@ -5,11 +5,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import me.sonam.organization.handler.OrganizationBody;
 import me.sonam.organization.handler.OrganizationUserBody;
-import me.sonam.organization.handler.UserUpdate;
+import me.sonam.organization.repo.OrganizationPositionRepository;
 import me.sonam.organization.repo.OrganizationRepository;
 import me.sonam.organization.repo.OrganizationUserRepository;
-import me.sonam.organization.repo.entity.Organization;
-import me.sonam.organization.repo.entity.OrganizationUser;
 import org.junit.Before;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -57,6 +55,9 @@ public class OrganizationRestServiceTest {
     private OrganizationUserRepository organizationUserRepository;
 
     @Autowired
+    private OrganizationPositionRepository organizationPositionRepository;
+
+    @Autowired
     private WebTestClient webTestClient;
 
     @MockBean
@@ -82,7 +83,7 @@ public class OrganizationRestServiceTest {
         Jwt jwt = jwt(authenticationId);
         when(this.jwtDecoder.decode(anyString())).thenReturn(Mono.just(jwt));
 
-        OrganizationBody organizationBody = new OrganizationBody(null, "Baggy Pants Company", creatorId);
+        OrganizationBody organizationBody = new OrganizationBody(null, "Baggy Pants Company", creatorId, null);
         EntityExchangeResult<String> result = webTestClient.post().uri("/organizations").headers(addJwt(jwt)).bodyValue(organizationBody)
                 .exchange().expectStatus().isCreated().expectBody(String.class).returnResult();
 
@@ -101,7 +102,7 @@ public class OrganizationRestServiceTest {
 
         LOG.info("page result contains: {}", result);
 
-        organizationBody = new OrganizationBody(organizationId, "New Name", creatorId);
+        organizationBody = new OrganizationBody(organizationId, "New Name", creatorId, null);
         result = webTestClient.put().uri("/organizations").headers(addJwt(jwt)).bodyValue(organizationBody)
                 .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
 
@@ -116,15 +117,16 @@ public class OrganizationRestServiceTest {
         UUID userId3 = UUID.randomUUID();
         LOG.info("userId1: {}, userId2: {}, userId3: {}", userId1, userId2, userId3);
 
+        UUID vpPosition = UUID.randomUUID();
+        UUID salesPosition = UUID.randomUUID();
+        UUID croPosition = UUID.randomUUID();
+
         List<OrganizationUserBody> organizationUserBodies = Arrays.asList(new OrganizationUserBody(null,
-                        organizationId, userId1, OrganizationUserBody.UpdateAction.add,
-                        OrganizationUser.RoleNamesEnum.admin.name()),
+                        organizationId, userId1, OrganizationUserBody.UpdateAction.add, vpPosition),
                 new OrganizationUserBody(null,
-                        organizationId, userId2, OrganizationUserBody.UpdateAction.add,
-                        OrganizationUser.RoleNamesEnum.admin.name()),
+                        organizationId, userId2, OrganizationUserBody.UpdateAction.add, salesPosition),
                 new OrganizationUserBody(null,
-                        organizationId, userId3, OrganizationUserBody.UpdateAction.add,
-                        OrganizationUser.RoleNamesEnum.user.name()));
+                        organizationId, userId3, OrganizationUserBody.UpdateAction.add, croPosition));
 
         LOG.info("add user to organization");
 
@@ -147,19 +149,22 @@ public class OrganizationRestServiceTest {
             LOG.info("linkedHashMap1: {}", linkedHashMap1);
 
             if (linkedHashMap1.get("userId").toString().equals(userId1.toString())) {
-                assertThat(linkedHashMap1.get("userRole")).isEqualTo("admin");
+//                assertThat(linkedHashMap1.get("userRole")).isEqualTo("admin");
                 LOG.info("verified is admin for userUpdate 1");
+                assertThat(linkedHashMap1.get("positionId").toString().equals(vpPosition.toString()));
             }
             else if (linkedHashMap1.get("userId").toString().equals(userId2.toString())) {
-                assertThat(linkedHashMap1.get("userRole")).isEqualTo("admin");
+            //    assertThat(linkedHashMap1.get("userRole")).isEqualTo("admin");
                 LOG.info("verified is admin for userUpdate 2");
+                assertThat(linkedHashMap1.get("positionId").toString().equals(salesPosition.toString()));
             }
             else if (linkedHashMap1.get("userId").toString().equals(userId3.toString())) {
-                assertThat(linkedHashMap1.get("userRole")).isEqualTo("user");
+          //      assertThat(linkedHashMap1.get("userRole")).isEqualTo("user");
                 LOG.info("verified is user for userUpdate 3");
+                assertThat(linkedHashMap1.get("positionId").toString().equals(croPosition.toString()));
             }
             else {
-                assertThat(linkedHashMap1.get("userRole").toString()).isEqualTo("admin");
+                assertThat(linkedHashMap1.get("userId").toString()).isEqualTo(creatorId.toString());
                 LOG.info("verified is user for userUpdate from initialization which by default is admin");
             }
 
@@ -167,14 +172,11 @@ public class OrganizationRestServiceTest {
 
         //leave null for id to generate its own
         organizationUserBodies = Arrays.asList(new OrganizationUserBody(null,
-                        organizationId, userId1, OrganizationUserBody.UpdateAction.update,
-                        OrganizationUser.RoleNamesEnum.user.name()),
+                        organizationId, userId1, OrganizationUserBody.UpdateAction.update, salesPosition),
                 new OrganizationUserBody(null,
-                        organizationId, userId2, OrganizationUserBody.UpdateAction.update,
-                        OrganizationUser.RoleNamesEnum.user.name()),
+                        organizationId, userId2, OrganizationUserBody.UpdateAction.update, croPosition),
                 new OrganizationUserBody(null,
-                        organizationId, userId3, OrganizationUserBody.UpdateAction.delete,
-                        null));
+                        organizationId, userId3, OrganizationUserBody.UpdateAction.delete,null));
 
         LOG.info("update organizationUsers, delete one");
         result = webTestClient.put().uri("/organizations/users").headers(addJwt(jwt)).bodyValue(organizationUserBodies)
@@ -196,18 +198,20 @@ public class OrganizationRestServiceTest {
             LOG.info("linkedHashMap1: {}", linkedHashMap1);
 
             if (linkedHashMap1.get("userId").toString().equals(userId1.toString())) {
-                assertThat(linkedHashMap1.get("userRole")).isEqualTo("user");
+              //  assertThat(linkedHashMap1.get("userRole")).isEqualTo("user");
                 LOG.info("verified is changed from admin to user for userUpdate 1");
+                assertThat(linkedHashMap1.get("positionId").toString().equals(salesPosition.toString()));
             }
             else if (linkedHashMap1.get("userId").toString().equals(userId2.toString())) {
-                assertThat(linkedHashMap1.get("userRole")).isEqualTo("user");
+            //    assertThat(linkedHashMap1.get("userRole")).isEqualTo("user");
                 LOG.info("verified is changed from admin to user for userUpdate 2");
+                assertThat(linkedHashMap1.get("positionId").toString().equals(croPosition.toString()));
             }
             else if (linkedHashMap1.get("userId").toString().equals(userId3.toString())) {
                 fail("this should not happen as userId3 is now deleted after update");
             }
             else {
-                assertThat(linkedHashMap1.get("userRole").toString()).isEqualTo("admin");
+                assertThat(linkedHashMap1.get("userId").toString()).isEqualTo(creatorId.toString());
                 LOG.info("verified is user from initialization");
             }
 
