@@ -83,7 +83,16 @@ postgres:
   dbname: organization
 
 envs:
-
+  - name: DB_SSLMODE
+    value: REQUIRE
+  - name: EUREKA_HOST
+    value: discovery-service.sonam.cloud
+  - name: DEFAULT_ZONE
+    value: https://${EUREKA_USER}:${EUREKA_PASSWORD}@${EUREKA_HOST}/eureka
+  - name: ISSUER_URL
+    value: http://authorization-server:9001
+  - name: OAUTH_CLIENTS
+    value: oauth-client
 
 health:
   liveness:
@@ -98,3 +107,11 @@ health:
     initialDelaySeconds: 60
     periodSeconds: 5
     failureThreshold: 5
+
+secretFiles:
+  - file: eureka-discovery
+    keys:
+      - key: user
+        name: EUREKA_USER
+      - key: password
+        name: EUREKA_PASSWORD
