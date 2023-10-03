@@ -22,9 +22,6 @@ jobs:
           java-version: '17'
           distribution: 'adopt'
 
-      - name: Publish Pacts
-        run: mvn pact:publish -Dpactbrokerurl=${{ secrets.PACTBROKER_URL }} -Dpactbrokerusername=${{ secrets.PACTBROKER_USERNAME }} -Dpactbrokerpassword=${{ secrets.PACTBROKER_PASSWORD }}
-
       - name: Log in to the Container registry
         uses: docker/login-action@v2
         with:
