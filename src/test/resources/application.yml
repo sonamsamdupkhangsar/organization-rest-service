@@ -37,8 +37,5 @@ authorization:
   token: /oauth2/token
 
 permitpath:
-  - path: /oauth2-token-mediator/authorize
+  - path: /organizations/api/health/*
     httpMethods: GET
-  - path: /oauth2-token-mediator/token
-
-password: IforTibet

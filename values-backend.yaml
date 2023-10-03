@@ -10,7 +10,7 @@ image:
 imagePullSecrets:
   - name: github-regcred
 nameOverride: ""
-fullnameOverride: ""
+fullnameOverride: "organization-rest-service"
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -85,33 +85,23 @@ postgres:
 envs:
   - name: DB_SSLMODE
     value: REQUIRE
-  - name: EUREKA_HOST
-    value: discovery-service.sonam.cloud
-  - name: DEFAULT_ZONE
-    value: https://${EUREKA_USER}:${EUREKA_PASSWORD}@${EUREKA_HOST}/eureka
   - name: ISSUER_URL
-    value: http://authorization-server:9001
+    value: https://authorization.sonam.cloud/issuer
   - name: OAUTH_CLIENTS
     value: oauth-client
 
 health:
   liveness:
-    path: /api/health/liveness
+    path: /organizations/api/health/liveness
     port: 8080
     initialDelaySeconds: 60
     periodSeconds: 5
     failureThreshold: 5
   readiness:
-    path: /api/health/readiness
+    path: /organizations/api/health/readiness
     port: 8080
     initialDelaySeconds: 60
     periodSeconds: 5
     failureThreshold: 5
 
 secretFiles:
-  - file: eureka-discovery
-    keys:
-      - key: user
-        name: EUREKA_USER
-      - key: password
-        name: EUREKA_PASSWORD

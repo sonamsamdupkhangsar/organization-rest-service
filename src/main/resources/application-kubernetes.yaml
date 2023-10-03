@@ -1,0 +1,14 @@
+# this profile is activated by kubernetes dependencies
+spring:
+  cloud:
+    kubernetes:
+      enabled: true
+      discovery:
+        namespaces:
+           - backend
+        include-not-ready-addresses: true
+eureka:
+  client:
+      enabled: false
+
+SERVER_PORT: 8080

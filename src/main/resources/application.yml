@@ -19,20 +19,9 @@ spring:
     password: ${POSTGRES_PASSWORD}
     properties:
       sslMode: ${DB_SSLMODE}
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${ISSUER_URL}
-
-eureka:
-  client:
-    enabled: ${EUREKA_CLIENT_ENABLED}
-    serviceUrl:
-      defaultZone: ${DEFAULT_ZONE}
 
 permitpath:
-  - path: /api/health/*
+  - path: /organizations/api/health/*
     httpMethods: GET
 
 token:

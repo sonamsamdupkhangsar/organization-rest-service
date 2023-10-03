@@ -22,12 +22,6 @@ jobs:
           java-version: '17'
           distribution: 'adopt'
 
-      - name: Publish package
-        run: mvn -s settings.xml --batch-mode deploy
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-
       - name: Publish Pacts
         run: mvn pact:publish -Dpactbrokerurl=${{ secrets.PACTBROKER_URL }} -Dpactbrokerusername=${{ secrets.PACTBROKER_USERNAME }} -Dpactbrokerpassword=${{ secrets.PACTBROKER_PASSWORD }}
 
@@ -66,4 +60,4 @@ jobs:
             --set "image.tag=latest" \
             --set "project=$PROJECT_NAME" \
              $PROJECT_NAME \
-            sonam/mychart -f values-backend.yaml --version 0.1.21 --namespace=backend
+            sonam/mychart -f values-backend.yaml --version 0.1.26 --namespace=backend
