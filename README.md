@@ -1,35 +1,31 @@
-# project-rest-service
+# organization-rest-service
+This service maintains the organization, the associated users and their associated positions.
 
-This is a template project for starting a Spring Webflux with R2DBC for Posgresql Maven based project.
+## Run
+For running locally using local profile:
+`./gradlew bootRun --args="--spring.profiles.active=local"`
 
-
-## Run locally
-
-```
-mvn spring-boot:run  -Dspring-boot.run.arguments="--POSTGRES_USERNAME=dummy \
-                      --POSTGRES_PASSWORD=dummy \
-                      --POSTGRES_DBNAME=account \
-                      --POSTGRES_SERVICE=localhost:5432"
-```
- 
- 
 ## Build Docker image
+Gradle build:
+```
+./gradlew bootBuildImage --imageName=name/organization-rest-service
+```
+Docker build passing in username and personal access token varaibles into docker to be used as environment variables in the gradle `build.gradle` file for pulling private maven artifact:
+```
+docker build --secret id=USERNAME,env=USERNAME --secret id=PERSONAL_ACCESS_TOKEN,env=PERSONAL_ACCESS_TOKEN . -t my/organization-rest-service
+```
 
-Build docker image using included Dockerfile.
+Pass local profile as argument:
+```
+ docker run -e --spring.profiles.active=local -p 9001:9001 -t myorg/organization-rest-service
+```
 
-
-`docker build -t imageregistry/project-rest-service:1.0 .` 
-
-## Push Docker image to repository
-
-`docker push imageregistry/project-rest-service:1.0`
-
-## Deploy Docker image locally
+or pass the environment variables for database information:
 
 `docker run -e POSTGRES_USERNAME=dummy \
  -e POSTGRES_PASSWORD=dummy -e POSTGRES_DBNAME=account \
   -e POSTGRES_SERVICE=localhost:5432 \
- --publish 8080:8080 imageregistry/project-rest-service:1.0`
+ --publish 8080:8080 imageregistry/organization-rest-service:1.0`
 
 
 ## Installation on Kubernetes

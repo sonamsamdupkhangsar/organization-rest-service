@@ -10,28 +10,16 @@ public class OrganizationUser implements Persistable<UUID> {
     public enum RoleNamesEnum {
         admin, user
     }
-
     @Id
     private UUID id;
     private UUID organizationId;
     private UUID userId;
-    private String userRole;
+    private UUID positionId;
     @Transient
     private boolean isNew;
 
-    @Override
-    public String toString() {
-        return "OrganizationUser{" +
-                "id=" + id +
-                ", organizationId=" + organizationId +
-                ", userId=" + userId +
-                ", isNew=" + isNew +
-                ", userRole='" + userRole +"'" +
-                '}';
-    }
-
-    public OrganizationUser(UUID id, UUID organizationId, UUID userId, String userRole) {
-        if (this.id != null) {
+    public OrganizationUser(UUID id, UUID organizationId, UUID userId, UUID positionId) {
+        if (id != null) {
             this.id = id;
             this.isNew = false;
         }
@@ -41,15 +29,26 @@ public class OrganizationUser implements Persistable<UUID> {
         }
         this.organizationId = organizationId;
         this.userId = userId;
-        this.userRole = userRole;
+        this.positionId = positionId;
+    }
+
+    @Override
+    public String toString() {
+        return "OrganizationUser{" +
+                "id=" + id +
+                ", organizationId=" + organizationId +
+                ", userId=" + userId +
+                ", isNew=" + isNew +
+                ", positionId='" + positionId +"'" +
+                '}';
     }
 
     public UUID getUserId() {
         return userId;
     }
 
-    public String getUserRole() {
-        return this.userRole;
+    public UUID getPositionId() {
+        return this.positionId;
     }
     public UUID getOrganizationId() {
         return this.organizationId;

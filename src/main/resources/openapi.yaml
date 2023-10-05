@@ -1,0 +1,250 @@
+openapi: "3.0.2"
+info:
+  title: Api for managing Organization
+  version: "1.0"
+servers:
+  - url: https://organization-rest-service.sonam.cloud
+
+security:
+  - bearerAuth: []
+
+paths:
+  /organizations:
+    post:
+      description: create a new Organization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationBody'
+      responses:
+        '201':
+          description: Successfully created new organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UuidResponseBody'
+        '400':
+          description: failed to create new organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestBody'
+    put:
+      description: Update Organization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationBody'
+      responses:
+        '200':
+          description: Successfully updated Organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UuidResponseBody'
+        '400':
+          description: failed to update organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestBody'
+    get:
+      description: get organizations by page
+      parameters:
+        - name: size
+          in: query
+          description: number of items on a page
+          schema:
+            type: integer
+        - name: page
+          in: query
+          description: Page number of the organizations to retrieve
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully retrieved a page of organizations
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      content:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/OrganizationBody'
+        '400':
+          description: failed to retrieve a page of organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestBody'
+
+  /organizations/{organizationId}:
+    delete:
+      description: delete organization by id
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: deleted organization by id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: failed to delete organization by id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestBody'
+    get:
+      description: get organization by id
+      parameters:
+        - name: organizationId
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully retrived organization by id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '400':
+          description: No organization found with id
+          content:
+            application/schema:
+              $ref: '#/components/schemas/BadRequestBody'
+  /organizations/users:
+    put:
+      description: Update list of organization user association
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationUserBody'
+      responses:
+       '200':
+         description: Successfully updated list of organization user associations
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/OkResponseBody'
+       '400':
+         description: failed to update list of organization and user assocations
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/BadRequestBody'
+  /organizations/{organizationId}/users:
+    get:
+      description: Get organizationusers in the organization id
+      parameters:
+        - name: organizationId
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully retrieved organization-users list for organization id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationUser'
+        '400':
+          description: failed to get organization-users for organziation id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestBody'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Page:
+      type: object
+      properties:
+        number:
+          type: integer
+        size:
+          type: integer
+    Organization:
+      allOf:
+        - $ref: '#/components/schemas/OrganizationBody'
+    OrganizationBody:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        creatorUserId:
+          type: string
+          format: uuid
+    OrganizationUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        organizationId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        userRole:
+          type: string
+    OrganizationUserBody:
+      allOf:
+        - $ref: '#/components/schemas/OrganizationUser'
+        - type: object
+          # single other specific property for OrganizationUserBody
+          properties:
+            updateAction:
+              type: string
+              enum:
+                - add
+                - update
+                - delete
+    BadRequestBody:
+      type: object
+      properties:
+        message:
+          type: string
+    UuidResponseBody:
+      type: object
+      properties:
+        message:
+          type: string
+          format: uuid
+    OkResponseBody:
+      type: object
+      properties:
+        message:
+          type: string

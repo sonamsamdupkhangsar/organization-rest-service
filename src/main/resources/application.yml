@@ -1,26 +1,29 @@
+server:
+  port: ${SERVER_PORT}
+
 logging:
   level:
     root: error
-    me:
-      sonam: info
-info:
-  app:
-    name: Springboot me.sonam.account.Application
-    description: This is a Springboot application
-    version: 1.0.0
-
-management:
-  endpoint:
-    health:
-      show-details: always
-
-server:
-  port: 8080
+    me.sonam.organization: info
+    org.springframework.web: info
+    org.springframework.security: info
+    org.springframework.security.oauth2: info
+    org.springframework.boot.autoconfigure: warn
 
 spring:
+  application:
+    name: organization-rest-service
   r2dbc:
     url: r2dbc:postgresql://${POSTGRES_SERVICE}/${POSTGRES_DBNAME}
     username: ${POSTGRES_USERNAME}
     password: ${POSTGRES_PASSWORD}
     properties:
-      sslMode: REQUIRE
+      sslMode: ${DB_SSLMODE}
+
+permitpath:
+  - path: /organizations/api/health/*
+    httpMethods: GET
+
+token:
+  audiences: ${OAUTH_CLIENTS}
+  issuerUri: ${ISSUER_URL}
