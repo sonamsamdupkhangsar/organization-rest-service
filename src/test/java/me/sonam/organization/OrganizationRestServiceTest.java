@@ -184,6 +184,26 @@ public class OrganizationRestServiceTest {
                 .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
         LOG.info("update user add and delete result: {}", result.getResponseBody());
 
+        EntityExchangeResult<String> entityExchangeResult = webTestClient.get()
+                .uri("/organizations/"+organizationId+"/users/"+userId1).headers(addJwt(jwt))
+                .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
+        LOG.info("client in organization response: {}", entityExchangeResult.getResponseBody());
+        webTestClient.get()
+                .uri("/organizations/"+organizationId+"/users/"+userId2).headers(addJwt(jwt))
+                .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
+        entityExchangeResult = webTestClient.get()
+                .uri("/organizations/"+organizationId+"/users/"+userId3).headers(addJwt(jwt))
+                .exchange().expectStatus().isBadRequest().expectBody(String.class).returnResult();
+        LOG.info("client not in organization response: {}", entityExchangeResult.getResponseBody());
+
+        UUID nonExistingUserId = UUID.randomUUID();
+        LOG.info("nonExistingUserId: {}", nonExistingUserId);
+
+        webTestClient.get()
+                .uri("/organizations/"+organizationId+"/users/"+nonExistingUserId).headers(addJwt(jwt))
+                .exchange().expectStatus().isBadRequest().expectBody(String.class).returnResult();
+
+
         LOG.info("get organizationUsers by organizationId and all users in it, which should give 3 organizatonUsers after deleting the 1");
         createdResult = webTestClient.get().uri("/organizations/"+organizationId+"/users")
                 .headers(addJwt(jwt)).exchange().expectStatus().isOk().expectBody(RestPage.class).returnResult();

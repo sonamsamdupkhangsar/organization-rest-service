@@ -153,4 +153,16 @@ public class OrganizationAssociation implements OrganizationBehavior {
                 .zipWith(organizationUserRepository.countByOrganizationId(organizationId))
                 .map(objects -> new PageImpl<>(objects.getT1(), pageable, objects.getT2()));
     }
+
+    @Override
+    public Mono<Boolean> userExistsInOrganization(UUID organizationId, UUID userId) {
+        LOG.info("check if user-id {} exists in organization-id {}", userId, organizationId);
+
+        return organizationUserRepository.existsByOrganizationIdAndUserId(organizationId, userId)
+                .filter(aBoolean -> aBoolean)
+                .switchIfEmpty(Mono.error(new OrgException("user does not exist in organization")))
+                .doOnNext(organizationUser -> LOG.info("user-id  exists in organization-id {}", organizationUser))
+                .flatMap(organizationUser -> Mono.just(true));
+    }
+
 }

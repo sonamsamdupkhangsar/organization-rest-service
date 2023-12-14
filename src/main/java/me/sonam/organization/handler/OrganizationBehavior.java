@@ -17,4 +17,5 @@ public interface OrganizationBehavior {
     Mono<String> deleteOrganization(UUID applicationId);
     Mono<String> updateOrganizationUsers(Flux<OrganizationUserBody> organizationUserBodyFlux);
     Mono<Page<OrganizationUser>> getOrganizationUsers(UUID organizationId, Pageable pageable);
+    Mono<Boolean> userExistsInOrganization(UUID organizationId, UUID userId);
 }

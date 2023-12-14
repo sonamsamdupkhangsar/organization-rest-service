@@ -19,11 +19,13 @@ spring:
     password: ${POSTGRES_PASSWORD}
     properties:
       sslMode: ${DB_SSLMODE}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${ISSUER_URI}
+          audiences: ${OAUTH_CLIENTS}
 
 permitpath:
   - path: /organizations/api/health/*
     httpMethods: GET
-
-token:
-  audiences: ${OAUTH_CLIENTS}
-  issuerUri: ${ISSUER_URL}
