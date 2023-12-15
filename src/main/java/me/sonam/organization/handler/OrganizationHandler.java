@@ -1,6 +1,5 @@
 package me.sonam.organization.handler;
 
-import com.nimbusds.jose.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -160,7 +159,7 @@ public class OrganizationHandler implements Handler {
 
         return manageOrganizePosition.deletePosition(UUID.fromString(serverRequest.pathVariable("id")),
                         UUID.fromString(serverRequest.pathVariable("organizationId")))
-                .flatMap(s -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(Pair.of("message", s)))
+                .flatMap(s -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(Map.of("message", s)))
                 .onErrorResume(throwable -> {
                     LOG.error("delete position failed: {}", throwable.getMessage());
                     return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
@@ -176,6 +175,22 @@ public class OrganizationHandler implements Handler {
                 .flatMap(s -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(s))
                 .onErrorResume(throwable -> {
                     LOG.error("get position by id failed: {}", throwable.getMessage());
+                    return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(Map.of("error", throwable.getMessage()));
+                });
+    }
+
+    @Override
+    public Mono<ServerResponse> userExistsInOrganization(ServerRequest serverRequest) {
+        LOG.info("check if user exists in organization");
+
+        return organizationBehavior.userExistsInOrganization(
+                UUID.fromString(serverRequest.pathVariable("organizationId")),
+                        UUID.fromString(serverRequest.pathVariable("userId"))
+                        )
+                .flatMap(s -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(Map.of("message", s)))
+                .onErrorResume(throwable -> {
+                    LOG.error("user does not exist in organization: {}", throwable.getMessage());
                     return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
                             .bodyValue(Map.of("error", throwable.getMessage()));
                 });

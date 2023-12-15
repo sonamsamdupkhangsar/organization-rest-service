@@ -36,6 +36,8 @@ public class Router {
                         .and(accept(MediaType.APPLICATION_JSON)), handler::updateOrganizationUsers)
                 .andRoute(GET("/organizations/{organizationId}/users")
                     .and(accept(MediaType.APPLICATION_JSON)), handler::getOrganizationUsers)
+                .andRoute(GET("/organizations/{organizationId}/users/{userId}")
+                        .and(accept(MediaType.APPLICATION_JSON)), handler::userExistsInOrganization)
                 .andRoute(POST("/organizations/{organizationId}/positions")
                     .and(accept(MediaType.APPLICATION_JSON)), handler::createOrganizationPosition)
                 .andRoute(PUT("/organizations/{organizationId}/positions")
