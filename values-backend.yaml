@@ -105,3 +105,7 @@ health:
     failureThreshold: 5
 
 secretFiles:
+  - file: newrelic-secret
+    keys:
+      - key: newrelic.license_key
+        name: NEW_RELIC_LICENSE_KEY
