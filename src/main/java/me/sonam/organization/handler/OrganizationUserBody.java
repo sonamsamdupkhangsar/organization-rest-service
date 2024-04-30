@@ -11,14 +11,12 @@ public class OrganizationUserBody {
 
     private UUID userId;
     private UUID positionId;
-    private UpdateAction updateAction;
 
-    public OrganizationUserBody(UUID id, UUID organizationId, UUID userId, UpdateAction updateAction, UUID positionId) {
+    public OrganizationUserBody(UUID id, UUID organizationId, UUID userId, UUID positionId) {
         this.id = id;
         this.organizationId = organizationId;
         this.userId = userId;
         this.positionId = positionId;
-        this.updateAction = updateAction;
     }
 
     public UUID getId() {
@@ -36,9 +34,5 @@ public class OrganizationUserBody {
 
     public UUID getPositionId() {
         return positionId;
-    }
-
-    public UpdateAction getUpdateAction() {
-        return updateAction;
     }
 }

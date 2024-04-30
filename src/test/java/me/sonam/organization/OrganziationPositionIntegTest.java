@@ -64,7 +64,7 @@ public class OrganziationPositionIntegTest {
         LOG.info("saving a organization position");
 
         EntityExchangeResult<Map> entityExchangeResult = webTestClient.post()
-                .uri("/organizations/"+orgId+"/positions")
+                .uri("/organizations/id/"+orgId+"/positions")
                 .headers(addJwt(jwt)).bodyValue(
                 Map.of("organizationId", orgId, "name", "VP")).exchange().expectStatus().isCreated()
                 .expectBody(Map.class).returnResult();
@@ -77,7 +77,7 @@ public class OrganziationPositionIntegTest {
         LOG.info("update organization position");
 
         EntityExchangeResult<Map> entityExchangeResult = webTestClient.put()
-                .uri("/organizations/"+orgId+"/positions")
+                .uri("/organizations/id/"+orgId+"/positions")
                 .headers(addJwt(jwt))
                 .bodyValue(map)
                 .exchange().expectStatus().isOk()
@@ -87,11 +87,11 @@ public class OrganziationPositionIntegTest {
         assertThat(entityExchangeResult.getResponseBody().get("message")).isEqualTo("organizationPosition updated");
     }
 
-    public Map<String, String> getPosition(Jwt jwt, UUID orgId, UUID positionId, HttpStatus httpStatus) {
+    public Map<String, String> getOrganizationPositions(Jwt jwt, UUID orgId, UUID positionId, HttpStatus httpStatus) {
         LOG.info("get organization position");
 
         EntityExchangeResult<Map> entityExchangeResult = webTestClient.get()
-                .uri("/organizations/"+orgId+"/positions/"+positionId)
+                .uri("/organizations/id/"+orgId+"/positions/"+positionId)
                 .headers(addJwt(jwt))
                 .exchange().expectStatus().isEqualTo(httpStatus)
                 .expectBody(Map.class).returnResult();
@@ -103,7 +103,7 @@ public class OrganziationPositionIntegTest {
         LOG.info("delete position by id: {}", positionId);
 
         EntityExchangeResult<Map> entityExchangeResult = webTestClient.delete()
-                .uri("/organizations/"+orgId+"/positions/"+positionId)
+                .uri("/organizations/id/"+orgId+"/positions/"+positionId)
                 .headers(addJwt(jwt))
                 .exchange().expectStatus().isOk()
                 .expectBody(Map.class).returnResult();
@@ -132,7 +132,7 @@ public class OrganziationPositionIntegTest {
 
         update(jwt, orgId, Map.of("id", posId.toString(), "organizationId", orgId.toString(), "name", "Sales"));
 
-        Map<String, String> map = getPosition(jwt, orgId, posId, HttpStatus.OK);
+        Map<String, String> map = getOrganizationPositions(jwt, orgId, posId, HttpStatus.OK);
         LOG.info("map: {}", map);
         assertThat(map.get("name")).isEqualTo("Sales");
         assertThat(map.get("id")).isEqualTo(posId.toString());
@@ -150,7 +150,7 @@ public class OrganziationPositionIntegTest {
 
         UUID posId = save(jwt, orgId);
         deletePosition(jwt, orgId, posId);
-        Map<String, String> map = getPosition(jwt, orgId, posId, HttpStatus.BAD_REQUEST);
+        Map<String, String> map = getOrganizationPositions(jwt, orgId, posId, HttpStatus.BAD_REQUEST);
         assertThat(map.get("error")).isEqualTo("No organization position found with id");
     }
 

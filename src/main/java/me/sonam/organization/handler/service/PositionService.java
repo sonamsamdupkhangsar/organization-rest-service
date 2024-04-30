@@ -46,6 +46,7 @@ public class PositionService implements PositionManager {
     @Override
     public Mono<UUID> deletePosition(UUID id, UUID organizationId) {
         LOG.info("delete position by id");
+
         return organizationPositionRepository.deleteByIdAndOrganizationId(id, organizationId).thenReturn(id);
     }
 

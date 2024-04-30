@@ -10,12 +10,14 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 
 public interface OrganizationBehavior {
-    Mono<Page<Organization>> getOrganizations(Pageable pageable);
+    Mono<Page<Organization>> getOrganizationsByOwnerId(UUID ownerId, Pageable pageable);
     Mono<Organization> getOrganizationById(UUID organizationId);
-    Mono<String> createOrganization(Mono<OrganizationBody> organizationBodyMono);
-    Mono<String> updateOrganization(Mono<OrganizationBody> organizationBodyMono);
+    Mono<Organization> createOrganization(Mono<OrganizationBody> organizationBodyMono);
+    Mono<Organization> updateOrganization(Mono<OrganizationBody> organizationBodyMono);
     Mono<String> deleteOrganization(UUID applicationId);
-    Mono<String> updateOrganizationUsers(Flux<OrganizationUserBody> organizationUserBodyFlux);
-    Mono<Page<OrganizationUser>> getOrganizationUsers(UUID organizationId, Pageable pageable);
+    //Mono<String> updateOrganizationUsers(Mono<OrganizationUserBody> organizationUserBodyFlux);
+    Mono<String> removeUserFromOrganization(UUID userId, UUID organizationId);
+    Mono<String> addUserToOrganization(OrganizationUserBody organizationUserBody);
+    Mono<Page<UUID>> getOrganizationUsers(UUID organizationId, Pageable pageable);
     Mono<Boolean> userExistsInOrganization(UUID organizationId, UUID userId);
 }

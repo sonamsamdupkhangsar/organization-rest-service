@@ -87,7 +87,7 @@ envs:
     value: REQUIRE
   - name: ISSUER_URI
     value: https://authorization.sonam.cloud/issuer
-  - name: OAUTH_AUDIENCES
+  - name: OAUTH_CLIENTS
     value: oauth-client
 
 health:
