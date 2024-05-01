@@ -118,7 +118,7 @@ public class OrganizationRestServiceTest {
 
     private void removeUserFromOrganization(UUID organizationId, UUID userId, Jwt jwt) {
         LOG.info("remove user from organization");
-        webTestClient.delete().uri("/organizations/id/"+organizationId+"/users/userId/"+userId)
+        webTestClient.delete().uri("/organizations/"+organizationId+"/users/"+userId)
                 .headers(addJwt(jwt))
                 .exchange().expectStatus().isOk().expectBody(Map.class).isEqualTo(Map.of("message", "deleted by organizationId and userId"));
     }
@@ -126,7 +126,7 @@ public class OrganizationRestServiceTest {
     private void getOrganizationUsers(List<UUID> userIdList, Organization organization, Jwt jwt) {
         LOG.info("get applications by id and all users in it, which should give 4 applicationUsers");
 
-        EntityExchangeResult<RestPage<UUID>> entityExchangeResult = webTestClient.get().uri("/organizations/id/"+organization.getId()+"/users")
+        EntityExchangeResult<RestPage<UUID>> entityExchangeResult = webTestClient.get().uri("/organizations/"+organization.getId()+"/users")
                 .headers(addJwt(jwt))
                 .exchange().expectStatus().isOk().expectBody(new ParameterizedTypeReference<RestPage<UUID>>() {}).returnResult();
 

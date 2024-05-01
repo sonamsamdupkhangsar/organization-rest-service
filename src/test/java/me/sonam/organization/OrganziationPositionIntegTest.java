@@ -64,7 +64,7 @@ public class OrganziationPositionIntegTest {
         LOG.info("saving a organization position");
 
         EntityExchangeResult<Map> entityExchangeResult = webTestClient.post()
-                .uri("/organizations/id/"+orgId+"/positions")
+                .uri("/organizations/"+orgId+"/positions")
                 .headers(addJwt(jwt)).bodyValue(
                 Map.of("organizationId", orgId, "name", "VP")).exchange().expectStatus().isCreated()
                 .expectBody(Map.class).returnResult();
@@ -77,7 +77,7 @@ public class OrganziationPositionIntegTest {
         LOG.info("update organization position");
 
         EntityExchangeResult<Map> entityExchangeResult = webTestClient.put()
-                .uri("/organizations/id/"+orgId+"/positions")
+                .uri("/organizations/"+orgId+"/positions")
                 .headers(addJwt(jwt))
                 .bodyValue(map)
                 .exchange().expectStatus().isOk()
@@ -91,7 +91,7 @@ public class OrganziationPositionIntegTest {
         LOG.info("get organization position");
 
         EntityExchangeResult<Map> entityExchangeResult = webTestClient.get()
-                .uri("/organizations/id/"+orgId+"/positions/"+positionId)
+                .uri("/organizations/"+orgId+"/positions/"+positionId)
                 .headers(addJwt(jwt))
                 .exchange().expectStatus().isEqualTo(httpStatus)
                 .expectBody(Map.class).returnResult();
@@ -103,7 +103,7 @@ public class OrganziationPositionIntegTest {
         LOG.info("delete position by id: {}", positionId);
 
         EntityExchangeResult<Map> entityExchangeResult = webTestClient.delete()
-                .uri("/organizations/id/"+orgId+"/positions/"+positionId)
+                .uri("/organizations/"+orgId+"/positions/"+positionId)
                 .headers(addJwt(jwt))
                 .exchange().expectStatus().isOk()
                 .expectBody(Map.class).returnResult();
