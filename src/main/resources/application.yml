@@ -24,7 +24,6 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${ISSUER_URI}
-          audiences: ${OAUTH_CLIENTS}
 
 permitpath:
   - path: /organizations/api/health/*
