@@ -14,7 +14,7 @@ EUREKA_PASSWORD: test
 ISSUER_ADDRESS: http://api-gateway:9001
 
 ISSUER_URI: ${ISSUER_ADDRESS}/issuer
-OAUTH_AUDIENCES: oauth-client
+OAUTH_CLIENTS: oauth-client
 #JWT_SET_URI: ${ISSUER_ADDRESS}/issuer/.well-known/jwks.json
 
 eureka:

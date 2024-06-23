@@ -87,7 +87,7 @@ public class OrganziationPositionIntegTest {
         assertThat(entityExchangeResult.getResponseBody().get("message")).isEqualTo("organizationPosition updated");
     }
 
-    public Map<String, String> getPosition(Jwt jwt, UUID orgId, UUID positionId, HttpStatus httpStatus) {
+    public Map<String, String> getOrganizationPositions(Jwt jwt, UUID orgId, UUID positionId, HttpStatus httpStatus) {
         LOG.info("get organization position");
 
         EntityExchangeResult<Map> entityExchangeResult = webTestClient.get()
@@ -132,7 +132,7 @@ public class OrganziationPositionIntegTest {
 
         update(jwt, orgId, Map.of("id", posId.toString(), "organizationId", orgId.toString(), "name", "Sales"));
 
-        Map<String, String> map = getPosition(jwt, orgId, posId, HttpStatus.OK);
+        Map<String, String> map = getOrganizationPositions(jwt, orgId, posId, HttpStatus.OK);
         LOG.info("map: {}", map);
         assertThat(map.get("name")).isEqualTo("Sales");
         assertThat(map.get("id")).isEqualTo(posId.toString());
@@ -150,7 +150,7 @@ public class OrganziationPositionIntegTest {
 
         UUID posId = save(jwt, orgId);
         deletePosition(jwt, orgId, posId);
-        Map<String, String> map = getPosition(jwt, orgId, posId, HttpStatus.BAD_REQUEST);
+        Map<String, String> map = getOrganizationPositions(jwt, orgId, posId, HttpStatus.BAD_REQUEST);
         assertThat(map.get("error")).isEqualTo("No organization position found with id");
     }
 

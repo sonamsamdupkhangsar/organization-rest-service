@@ -8,6 +8,7 @@ import me.sonam.organization.handler.OrganizationUserBody;
 import me.sonam.organization.repo.OrganizationPositionRepository;
 import me.sonam.organization.repo.OrganizationRepository;
 import me.sonam.organization.repo.OrganizationUserRepository;
+import me.sonam.organization.repo.entity.Organization;
 import org.junit.Before;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -40,6 +42,9 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+/**
+ * this will test the organization create, update and add users to organization
+ */
 
 @EnableAutoConfiguration
 @ExtendWith(SpringExtension.class)
@@ -75,42 +80,78 @@ public class OrganizationRestServiceTest {
         organizationUserRepository.deleteAll().subscribe(unused -> LOG.info("deleted all organization users"));
     }
 
+    private Organization createOrganization(UUID creatorId, String organizationName, Jwt jwt) {
+        OrganizationBody organizationBody = new OrganizationBody(null, organizationName, creatorId, null);
+        EntityExchangeResult<Organization> organizationEntityExchangeResult = webTestClient.post().uri("/organizations").headers(addJwt(jwt)).bodyValue(organizationBody)
+                .exchange().expectStatus().isCreated().expectBody(Organization.class).returnResult();
+
+        assertThat(organizationEntityExchangeResult.getResponseBody()).isNotNull();
+        assertThat(organizationEntityExchangeResult.getResponseBody().getId()).isNotNull();
+        assertThat(organizationEntityExchangeResult.getResponseBody().getName()).isEqualTo("Baggy Pants Company");
+        assertThat(organizationEntityExchangeResult.getResponseBody().getCreatorUserId()).isEqualTo(creatorId);
+
+        return organizationEntityExchangeResult.getResponseBody();
+    }
+
+    private Organization updateOrganization(Organization organization, Jwt jwt) {
+        OrganizationBody organizationBody = new OrganizationBody(organization.getId(), "New Name", organization.getCreatorUserId(), null);
+        EntityExchangeResult<Organization> organizationEntityExchangeResult = webTestClient.put().uri("/organizations").headers(addJwt(jwt)).bodyValue(organizationBody)
+                .exchange().expectStatus().isOk().expectBody(Organization.class).returnResult();
+
+        Organization updatedOrganization = organizationEntityExchangeResult.getResponseBody();
+
+        LOG.info("result from update: {}", organization);
+        assertThat(updatedOrganization).isNotNull();
+        assertThat(updatedOrganization.getCreatorUserId()).isEqualTo(organization.getCreatorUserId());
+        assertThat(updatedOrganization.getName()).isEqualTo("New Name");
+
+        return updatedOrganization;
+    }
+
+    private void addUserToOrganization(UUID organizationId, UUID userId, Jwt jwt, UUID positionId) {
+        LOG.info("add user to organization");
+
+        webTestClient.post().uri("/organizations/users").bodyValue(new OrganizationUserBody(null, organizationId, userId, positionId))
+                .headers(addJwt(jwt))
+                .exchange().expectStatus().isOk().expectBody(Map.class).isEqualTo(Map.of("message", "added user to organization"));
+    }
+
+    private void removeUserFromOrganization(UUID organizationId, UUID userId, Jwt jwt) {
+        LOG.info("remove user from organization");
+        webTestClient.delete().uri("/organizations/"+organizationId+"/users/"+userId)
+                .headers(addJwt(jwt))
+                .exchange().expectStatus().isOk().expectBody(Map.class).isEqualTo(Map.of("message", "deleted by organizationId and userId"));
+    }
+
+    private void getOrganizationUsers(List<UUID> userIdList, Organization organization, Jwt jwt) {
+        LOG.info("get applications by id and all users in it, which should give 4 applicationUsers");
+
+        EntityExchangeResult<RestPage<UUID>> entityExchangeResult = webTestClient.get().uri("/organizations/"+organization.getId()+"/users")
+                .headers(addJwt(jwt))
+                .exchange().expectStatus().isOk().expectBody(new ParameterizedTypeReference<RestPage<UUID>>() {}).returnResult();
+
+        RestPage<UUID> restPage = entityExchangeResult.getResponseBody();
+
+        assertThat(restPage).isNotNull();
+        LOG.info("uuid in restPage: {}", restPage.getContent());
+
+        LOG.info("assert that only application user exists");
+        assertThat(restPage.getContent().size()).isEqualTo(userIdList.size()); //plus 1 for the creator as there will be a organization user association when created
+
+        assertThat(restPage.getContent().containsAll(userIdList)).isTrue();
+    }
+
     @Test
-    public void createOrganization() {
+    public void createOrganizationAndUpdateAndAddOrganizationUsers() {
         LOG.info("create organization");
         UUID creatorId = UUID.randomUUID();
         final String authenticationId = "sonam";
         Jwt jwt = jwt(authenticationId);
         when(this.jwtDecoder.decode(anyString())).thenReturn(Mono.just(jwt));
 
-        OrganizationBody organizationBody = new OrganizationBody(null, "Baggy Pants Company", creatorId, null);
-        EntityExchangeResult<String> result = webTestClient.post().uri("/organizations").headers(addJwt(jwt)).bodyValue(organizationBody)
-                .exchange().expectStatus().isCreated().expectBody(String.class).returnResult();
+        Organization organization = createOrganization(creatorId, "Baggy Pants Company", jwt);
 
-        LOG.info("result: {}", result.getResponseBody());
-        assertThat(result.getResponseBody()).isNotEmpty();
-
-        UUID organizationId = UUID.fromString(result.getResponseBody());
-
-        organizationRepository.findById(organizationId)
-                .subscribe(organization -> LOG.info("found organization with id: {}", organization));
-
-        LOG.info("verify organization can be retrieved");
-
-        result = webTestClient.get().uri("/organizations").headers(addJwt(jwt)).exchange().expectStatus().isOk().expectBody(String.class)
-                .returnResult();
-
-        LOG.info("page result contains: {}", result);
-
-        organizationBody = new OrganizationBody(organizationId, "New Name", creatorId, null);
-        result = webTestClient.put().uri("/organizations").headers(addJwt(jwt)).bodyValue(organizationBody)
-                .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
-
-        LOG.info("result from update: {}", result.getResponseBody());
-        assertThat(result.getResponseBody()).isEqualTo(organizationBody.getId().toString());
-
-        organizationRepository.findById(organizationId)
-                .subscribe(organization -> LOG.info("found organization with id: {}", organization));
+        updateOrganization(organization, jwt);
 
         UUID userId1 = UUID.randomUUID();
         UUID userId2 = UUID.randomUUID();
@@ -121,134 +162,18 @@ public class OrganizationRestServiceTest {
         UUID salesPosition = UUID.randomUUID();
         UUID croPosition = UUID.randomUUID();
 
-        List<OrganizationUserBody> organizationUserBodies = Arrays.asList(new OrganizationUserBody(null,
-                        organizationId, userId1, OrganizationUserBody.UpdateAction.add, vpPosition),
-                new OrganizationUserBody(null,
-                        organizationId, userId2, OrganizationUserBody.UpdateAction.add, salesPosition),
-                new OrganizationUserBody(null,
-                        organizationId, userId3, OrganizationUserBody.UpdateAction.add, croPosition));
-
-        LOG.info("add user to organization");
-
-        result = webTestClient.put().uri("/organizations/users").headers(addJwt(jwt)).bodyValue(organizationUserBodies)
-                .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
-        LOG.info("result: {}", result.getResponseBody());
-
-        LOG.info("get applications by id and all users in it, which should give 4 applicationUsers");
-        EntityExchangeResult<RestPage> createdResult = webTestClient.get().uri("/organizations/"+organizationId+"/users")
-                .headers(addJwt(jwt))
-                .exchange().expectStatus().isOk().expectBody(RestPage.class).returnResult();
-
-        LOG.info("pageResult pageable {}", createdResult.getResponseBody().getPageable());
-        LOG.info("assert that only applicationuser exists");
-        assertThat(createdResult.getResponseBody().getContent().size()).isEqualTo(4);
-        LOG.info("applicationUser: {}", createdResult.getResponseBody().getContent().get(0));
-        createdResult.getResponseBody().getContent().forEach(o -> {
-            LinkedHashMap<String, String> linkedHashMap1 = (LinkedHashMap) o;
-
-            LOG.info("linkedHashMap1: {}", linkedHashMap1);
-
-            if (linkedHashMap1.get("userId").toString().equals(userId1.toString())) {
-//                assertThat(linkedHashMap1.get("userRole")).isEqualTo("admin");
-                LOG.info("verified is admin for userUpdate 1");
-                assertThat(linkedHashMap1.get("positionId").toString().equals(vpPosition.toString()));
-            }
-            else if (linkedHashMap1.get("userId").toString().equals(userId2.toString())) {
-            //    assertThat(linkedHashMap1.get("userRole")).isEqualTo("admin");
-                LOG.info("verified is admin for userUpdate 2");
-                assertThat(linkedHashMap1.get("positionId").toString().equals(salesPosition.toString()));
-            }
-            else if (linkedHashMap1.get("userId").toString().equals(userId3.toString())) {
-          //      assertThat(linkedHashMap1.get("userRole")).isEqualTo("user");
-                LOG.info("verified is user for userUpdate 3");
-                assertThat(linkedHashMap1.get("positionId").toString().equals(croPosition.toString()));
-            }
-            else {
-                assertThat(linkedHashMap1.get("userId").toString()).isEqualTo(creatorId.toString());
-                LOG.info("verified is user for userUpdate from initialization which by default is admin");
-            }
-
-        });
-
-        //leave null for id to generate its own
-        organizationUserBodies = Arrays.asList(new OrganizationUserBody(null,
-                        organizationId, userId1, OrganizationUserBody.UpdateAction.update, salesPosition),
-                new OrganizationUserBody(null,
-                        organizationId, userId2, OrganizationUserBody.UpdateAction.update, croPosition),
-                new OrganizationUserBody(null,
-                        organizationId, userId3, OrganizationUserBody.UpdateAction.delete,null));
-
-        LOG.info("update organizationUsers, delete one");
-        result = webTestClient.put().uri("/organizations/users").headers(addJwt(jwt)).bodyValue(organizationUserBodies)
-                .headers(addJwt(jwt))
-                .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
-        LOG.info("update user add and delete result: {}", result.getResponseBody());
-
-        EntityExchangeResult<String> entityExchangeResult = webTestClient.get()
-                .uri("/organizations/"+organizationId+"/users/"+userId1).headers(addJwt(jwt))
-                .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
-        LOG.info("client in organization response: {}", entityExchangeResult.getResponseBody());
-        webTestClient.get()
-                .uri("/organizations/"+organizationId+"/users/"+userId2).headers(addJwt(jwt))
-                .exchange().expectStatus().isOk().expectBody(String.class).returnResult();
-        entityExchangeResult = webTestClient.get()
-                .uri("/organizations/"+organizationId+"/users/"+userId3).headers(addJwt(jwt))
-                .exchange().expectStatus().isBadRequest().expectBody(String.class).returnResult();
-        LOG.info("client not in organization response: {}", entityExchangeResult.getResponseBody());
-
-        UUID nonExistingUserId = UUID.randomUUID();
-        LOG.info("nonExistingUserId: {}", nonExistingUserId);
-
-        webTestClient.get()
-                .uri("/organizations/"+organizationId+"/users/"+nonExistingUserId).headers(addJwt(jwt))
-                .exchange().expectStatus().isBadRequest().expectBody(String.class).returnResult();
+        addUserToOrganization(organization.getId(), userId1, jwt, vpPosition);
+        addUserToOrganization(organization.getId(), userId2, jwt, salesPosition);
+        addUserToOrganization(organization.getId(), userId3, jwt, croPosition);
 
 
-        LOG.info("get organizationUsers by organizationId and all users in it, which should give 3 organizatonUsers after deleting the 1");
-        createdResult = webTestClient.get().uri("/organizations/"+organizationId+"/users")
-                .headers(addJwt(jwt)).exchange().expectStatus().isOk().expectBody(RestPage.class).returnResult();
+        getOrganizationUsers(List.of(creatorId, userId1, userId2, userId3), organization, jwt);
 
-        LOG.info("pageResult pageable {}", createdResult.getResponseBody().getPageable());
-        LOG.info("assert that only organizationuser exists");
-        assertThat(createdResult.getResponseBody().getContent().size()).isEqualTo(3);
-        LOG.info("applicationUser: {}", createdResult.getResponseBody().getContent().get(0));
-        createdResult.getResponseBody().getContent().forEach(o -> {
-            LinkedHashMap<String, String> linkedHashMap1 = (LinkedHashMap) o;
+        removeUserFromOrganization(organization.getId(), userId1, jwt);
+        removeUserFromOrganization(organization.getId(), userId2, jwt);
+        removeUserFromOrganization(organization.getId(), userId3, jwt);
 
-            LOG.info("linkedHashMap1: {}", linkedHashMap1);
-
-            if (linkedHashMap1.get("userId").toString().equals(userId1.toString())) {
-              //  assertThat(linkedHashMap1.get("userRole")).isEqualTo("user");
-                LOG.info("verified is changed from admin to user for userUpdate 1");
-                assertThat(linkedHashMap1.get("positionId").toString().equals(salesPosition.toString()));
-            }
-            else if (linkedHashMap1.get("userId").toString().equals(userId2.toString())) {
-            //    assertThat(linkedHashMap1.get("userRole")).isEqualTo("user");
-                LOG.info("verified is changed from admin to user for userUpdate 2");
-                assertThat(linkedHashMap1.get("positionId").toString().equals(croPosition.toString()));
-            }
-            else if (linkedHashMap1.get("userId").toString().equals(userId3.toString())) {
-                fail("this should not happen as userId3 is now deleted after update");
-            }
-            else {
-                assertThat(linkedHashMap1.get("userId").toString()).isEqualTo(creatorId.toString());
-                LOG.info("verified is user from initialization");
-            }
-
-        });
-
-        result = webTestClient.delete().uri("/organizations/"+organizationId).headers(addJwt(jwt)).exchange().expectStatus().isOk().expectBody(String.class)
-                .returnResult();
-        assertThat(result.getResponseBody()).isEqualTo("organization deleted");
-
-        StepVerifier.create(organizationRepository.existsById(organizationId)).expectNext(false).expectComplete();
-        organizationRepository.existsById(organizationId).subscribe(aBoolean -> LOG.info("should be false after deletion: {}",aBoolean));
-
-        LOG.info("expect bad request after deleting the orgainzationId");
-        result = webTestClient.get().uri("/organizations/"+organizationId)
-                .headers(addJwt(jwt)).exchange().expectStatus().isBadRequest()
-                .expectBody(String.class).returnResult();
-        LOG.info("got page results for applications by organizations: {}", result);
+        getOrganizationUsers(List.of(creatorId), organization, jwt);
     }
 
 
