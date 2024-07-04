@@ -1,6 +1,7 @@
 # organization-rest-service
 This service maintains the organization, the associated users and their associated positions.
 
+
 ## Run
 For running locally using local profile:
 `./gradlew bootRun --args="--spring.profiles.active=local"`
