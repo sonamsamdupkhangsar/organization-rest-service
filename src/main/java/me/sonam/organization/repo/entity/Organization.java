@@ -14,6 +14,7 @@ public class Organization implements Persistable<UUID> {
     @Transient
     private boolean isNew;
 
+    public Organization() {}
     public Organization(UUID id, String name, UUID creatorUserId) {
         if (id != null) {
             this.id = id;

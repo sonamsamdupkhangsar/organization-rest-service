@@ -20,4 +20,5 @@ public interface Handler {
     Mono<ServerResponse> deletePosition(ServerRequest serverRequest);
     Mono<ServerResponse> getPositionById(ServerRequest serverRequest);
     Mono<ServerResponse> userExistsInOrganization(ServerRequest serverRequest);
+    Mono<ServerResponse> deleteByUserId(ServerRequest serverRequest);
 }

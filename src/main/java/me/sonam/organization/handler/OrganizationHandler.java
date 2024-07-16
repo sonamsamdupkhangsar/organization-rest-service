@@ -223,4 +223,17 @@ public class OrganizationHandler implements Handler {
                             .bodyValue(Map.of("error", throwable.getMessage()));
                 });
     }
+
+    @Override
+    public Mono<ServerResponse> deleteByUserId(ServerRequest serverRequest) {
+        LOG.info("check if user exists in organization");
+
+        return organizationBehavior.deleteMyOrganization()
+                .flatMap(s -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(Map.of("message", s)))
+                .onErrorResume(throwable -> {
+                    LOG.error("user does not exist in organization: {}", throwable.getMessage());
+                    return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(Map.of("error", throwable.getMessage()));
+                });
+    }
 }

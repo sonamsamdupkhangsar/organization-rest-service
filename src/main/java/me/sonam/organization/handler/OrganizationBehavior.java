@@ -20,4 +20,5 @@ public interface OrganizationBehavior {
     Mono<String> addUserToOrganization(OrganizationUserBody organizationUserBody);
     Mono<Page<UUID>> getOrganizationUsers(UUID organizationId, Pageable pageable);
     Mono<Boolean> userExistsInOrganization(UUID organizationId, UUID userId);
+    Mono<String> deleteMyOrganization();
 }

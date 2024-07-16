@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -123,6 +125,32 @@ public class OrganizationAssociation implements OrganizationBehavior {
         LOG.info("check if user-id {} exists in organization-id {}", userId, organizationId);
 
         return organizationUserRepository.existsByOrganizationIdAndUserId(organizationId, userId);
+    }
+
+    @Override
+    public Mono<String> deleteMyOrganization() {
+        return ReactiveSecurityContextHolder.getContext().flatMap(securityContext -> {
+            LOG.info("principal: {}", securityContext.getAuthentication().getPrincipal());
+            org.springframework.security.core.Authentication authentication = securityContext.getAuthentication();
+
+            LOG.info("authentication: {}", authentication);
+            LOG.info("authentication.principal: {}", authentication.getPrincipal());
+            Jwt jwt = (Jwt) authentication.getPrincipal();
+            String userIdString = jwt.getClaim("userId");
+            LOG.info("delete user data for userId: {}", userIdString);
+
+            UUID userId = UUID.fromString(userIdString);
+
+            return organizationRepository.findByCreatorUserId(userId).flatMap(organization -> {
+                LOG.info("delete organizationUser.orgName: {}", organization.getName());
+                return organizationUserRepository.deleteByOrganizationId(organization.getId())
+                        .then(
+                                organizationPositionRepository.deleteByOrganizationId(organization.getId())
+                        )
+                        .then(organizationRepository.deleteByCreatorUserId(userId));
+            }).collectList()
+                    .thenReturn("delete organization success for user id: " + userId);
+        });
     }
 
 }
