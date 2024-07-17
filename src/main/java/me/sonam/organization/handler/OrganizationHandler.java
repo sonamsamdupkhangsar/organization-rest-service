@@ -224,8 +224,13 @@ public class OrganizationHandler implements Handler {
                 });
     }
 
+    /**
+     * delete organization info for logged-in user, part of delete my info
+     * @param serverRequest
+     * @return
+     */
     @Override
-    public Mono<ServerResponse> deleteByUserId(ServerRequest serverRequest) {
+    public Mono<ServerResponse> delete(ServerRequest serverRequest) {
         LOG.info("check if user exists in organization");
 
         return organizationBehavior.deleteMyOrganization()

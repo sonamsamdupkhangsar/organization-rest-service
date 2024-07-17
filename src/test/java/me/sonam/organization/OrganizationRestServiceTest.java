@@ -257,7 +257,7 @@ public class OrganizationRestServiceTest {
     private void deleteMyOrganizationCall(Jwt jwt, UUID userId, UUID orgId) {
         LOG.info("add user to organization");
 
-        webTestClient.mutateWith(mockJwt().jwt(jwt)).delete().uri("/organizations/users/"+userId)
+        webTestClient.mutateWith(mockJwt().jwt(jwt)).delete().uri("/organizations")
                 .headers(addJwt(jwt))
                 .exchange().expectStatus().isOk().expectBody(Map.class).isEqualTo(Map.of("message", "delete organization success for user id: " + userId));
 
