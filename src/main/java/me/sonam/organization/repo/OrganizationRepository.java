@@ -12,4 +12,6 @@ public interface OrganizationRepository extends ReactiveCrudRepository<Organizat
     Flux<Organization> findAllBy(Pageable pageable);
     Flux<Organization> findByCreatorUserId(UUID ownerId, Pageable pageable);
     Mono<Long> countByCreatorUserId(UUID ownerId);
+    Mono<Integer> deleteByCreatorUserId(UUID userId);
+    Flux<Organization> findByCreatorUserId(UUID ownerId);
 }

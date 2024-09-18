@@ -49,7 +49,9 @@ public class Router {
                 .andRoute(GET("/organizations/{id}/positions/{positionId}")
                         .and(accept(MediaType.APPLICATION_JSON)), handler::getPositionById)
                 .andRoute(DELETE("/organizations/{id}/positions/{positionId}")
-                        .and(accept(MediaType.APPLICATION_JSON)), handler::deletePosition);
+                        .and(accept(MediaType.APPLICATION_JSON)), handler::deletePosition)
+                .andRoute(DELETE("/organizations")
+                        .and(accept(MediaType.APPLICATION_JSON)), handler::delete);
 
 
     }
