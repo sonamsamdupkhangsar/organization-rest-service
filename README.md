@@ -51,4 +51,3 @@ export PGSSLMODE=require;
 psql -U <USER> -d projectdb -h localhost -p 6432
 
 ```
-
