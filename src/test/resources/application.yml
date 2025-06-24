@@ -14,7 +14,7 @@ spring:
           jwk-set-uri: http://localhost:9000/issuer/.well-known/jwks.json
           audiences: oauth-client
   application:
-    name: authorization-server
+    name: organization-rest-service
   datasource:
     url: jdbc:hsqldb:mem:testdb
     username: sa
@@ -29,11 +29,6 @@ spring:
 eureka:
   client:
     enabled: false
-
-authorization:
-  root: http://localhost
-  authorize: /oauth2/authorize
-  token: /oauth2/token
 
 permitpath:
   - path: /organizations/api/health/*
