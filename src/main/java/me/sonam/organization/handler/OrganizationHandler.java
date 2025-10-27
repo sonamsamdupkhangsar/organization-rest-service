@@ -3,6 +3,7 @@ package me.sonam.organization.handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -11,12 +12,13 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 @Service
 public class OrganizationHandler implements Handler {
-    private static final Logger LOG = LoggerFactory.getLogger(Handler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OrganizationHandler.class);
 
     @Autowired
     private OrganizationBehavior organizationBehavior;
@@ -43,6 +45,21 @@ public class OrganizationHandler implements Handler {
                 .flatMap(s -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(s))
                 .onErrorResume(throwable -> {
                     LOG.error("get organization by id failed: {}", throwable.getMessage());
+                    return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(Map.of("error", throwable.getMessage()));
+                });
+    }
+
+    public Mono<ServerResponse> getOrganizationByIds(ServerRequest serverRequest) {
+        LOG.info("get organization by list of ids");
+
+        return serverRequest.bodyToMono(new ParameterizedTypeReference<List<UUID>>() {})
+                .flatMap(uuids -> organizationBehavior.getOrganizationByIds(uuids))
+                .doOnNext(organizationList -> LOG.info("orgList: {}", organizationList))
+                .flatMap(organizationList -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(organizationList))
+                .onErrorResume(throwable -> {
+                    LOG.error("get organization by ids failed: {}", throwable.getMessage());
                     return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
                             .bodyValue(Map.of("error", throwable.getMessage()));
                 });
@@ -230,11 +247,15 @@ public class OrganizationHandler implements Handler {
      * @return
      */
     @Override
-    public Mono<ServerResponse> delete(ServerRequest serverRequest) {
-        LOG.info("check if user exists in organization");
+    public Mono<ServerResponse> deleteMyInfo(ServerRequest serverRequest) {
+        String uuidString = serverRequest.pathVariable("organizationId");
+        LOG.info("delete organization information for user with organizationId: {}", uuidString);
+        UUID organizationId = UUID.fromString(uuidString);
 
-        return organizationBehavior.deleteMyOrganization()
-                .flatMap(s -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(Map.of("message", s)))
+        return organizationBehavior.deleteMyOrganization(organizationId)
+                .doOnNext(s -> LOG.info("got response: {}",s))
+                .flatMap(s -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(Map.of("message", s)))
                 .onErrorResume(throwable -> {
                     LOG.error("user does not exist in organization: {}", throwable.getMessage());
                     return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)

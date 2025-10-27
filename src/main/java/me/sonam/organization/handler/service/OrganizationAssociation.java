@@ -18,8 +18,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -56,17 +58,27 @@ public class OrganizationAssociation implements OrganizationBehavior {
     }
 
     @Override
+    public Mono<List<Organization>> getOrganizationByIds(List<UUID> organizationIdList) {
+        LOG.info("find organization by id list {}", organizationIdList);
+
+        return organizationRepository.findByIdIn(organizationIdList).collectList();
+    }
+
+    @Override
     public Mono<Organization> createOrganization(Mono<OrganizationBody> organizationBodyMono) {
         LOG.info("create organization");
 
         return organizationBodyMono.flatMap(organizationBody ->
                 organizationRepository.save(new Organization(null, organizationBody.getName(),
                         organizationBody.getCreatorUserId())))
+                .doOnNext(organization -> LOG.info("saved organization {}", organization))
                 .flatMap(organization->
                         Mono.just(new OrganizationUser
                                 (null, organization.getId(), organization.getCreatorUserId(),
                                         null)).zipWith(Mono.just(organization)))
-                .flatMap(objects -> organizationUserRepository.save(objects.getT1()).thenReturn(objects.getT2()));
+                .flatMap(objects -> organizationUserRepository.save(objects.getT1())
+                        .doOnNext(organizationUser -> LOG.info("saved organizationUser {}", organizationUser))
+                        .thenReturn(objects.getT2()));
     }
 
     @Override
@@ -128,7 +140,7 @@ public class OrganizationAssociation implements OrganizationBehavior {
     }
 
     @Override
-    public Mono<String> deleteMyOrganization() {
+    public Mono<String> deleteMyOrganization(UUID organizationId) {
         return ReactiveSecurityContextHolder.getContext().flatMap(securityContext -> {
             LOG.info("principal: {}", securityContext.getAuthentication().getPrincipal());
             org.springframework.security.core.Authentication authentication = securityContext.getAuthentication();
@@ -141,15 +153,18 @@ public class OrganizationAssociation implements OrganizationBehavior {
 
             UUID userId = UUID.fromString(userIdString);
 
-            return organizationRepository.findByCreatorUserId(userId).flatMap(organization -> {
-                LOG.info("delete organizationUser.orgName: {}", organization.getName());
-                return organizationUserRepository.deleteByOrganizationId(organization.getId())
-                        .then(
-                                organizationPositionRepository.deleteByOrganizationId(organization.getId())
-                        )
-                        .then(organizationRepository.deleteByCreatorUserId(userId));
-            }).collectList()
-                    .thenReturn("delete organization success for user id: " + userId);
+            return organizationUserRepository.deleteByOrganizationIdAndUserId(organizationId, userId)
+                    .flatMap(integer -> organizationUserRepository.countByOrganizationId(organizationId))
+                    .flatMap(aLong -> {
+                        if (aLong > 0) {
+                            LOG.info("there are other users associated to this organization, don't delete the Organization.");
+                            return Mono.just("organization user association deleted only");
+                        } else {
+                            LOG.info("there are no other user associated to this organization, DELETE the Organization too.");
+                            return organizationRepository.deleteById(organizationId)
+                                    .thenReturn("Organization and its user associated deleted");
+                        }
+                    });
         });
     }
 

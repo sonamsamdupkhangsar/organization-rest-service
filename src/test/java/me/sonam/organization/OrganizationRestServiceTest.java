@@ -9,6 +9,7 @@ import me.sonam.organization.repo.OrganizationPositionRepository;
 import me.sonam.organization.repo.OrganizationRepository;
 import me.sonam.organization.repo.OrganizationUserRepository;
 import me.sonam.organization.repo.entity.Organization;
+import me.sonam.organization.repo.entity.OrganizationUser;
 import org.junit.Before;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -40,6 +42,7 @@ import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockJwt;
@@ -207,11 +210,6 @@ public class OrganizationRestServiceTest {
 
         LOG.info("Create organization");
         Organization organization = createOrganization(creatorId, organizationName, jwt);
-        Organization organization2 = createOrganization(creatorId, organizationName+2, jwt);
-        Organization organization3 = createOrganization(creatorId, organizationName+3, jwt);
-        Organization organization4 = createOrganization(creatorId, organizationName+4, jwt);
-        Organization organization5 = createOrganization(creatorId, organizationName+5, jwt);
-        Organization organization6 = createOrganization(creatorId, organizationName+6, jwt);
 
         updateOrganization(organization, jwt);
 
@@ -240,6 +238,99 @@ public class OrganizationRestServiceTest {
 
     }
 
+    //test my organization deletion -- part of delete my info
+    @Test
+    public void deleteMyOrganizationWith1UserAssociation() {
+        UUID userId = UUID.randomUUID();
+        final String authenticationId = "sonam";
+        Jwt jwt = jwt(authenticationId, userId);
+
+        Organization organization = new Organization(null, "My good dog food compay", userId);
+        organizationRepository.save(organization).subscribe();
+        assertThat(organization.getId()).isNotNull();
+
+        OrganizationUser organizationUser = new OrganizationUser(null, organization.getId(), userId, null);
+        organizationUserRepository.save(organizationUser).subscribe();
+
+        webTestClient.mutateWith(mockJwt().jwt(jwt)).delete().uri("/organizations/my/"+organization.getId())
+                .headers(addJwt(jwt))
+                .exchange().expectStatus().isOk().expectBody(Map.class).isEqualTo(Map.of("message", "Organization and its user associated deleted"));
+
+        StepVerifier.create(organizationRepository.findById(organization.getId())).verifyComplete();
+        StepVerifier.create(organizationUserRepository.findByOrganizationId(organization.getId())).verifyComplete();
+    }
+
+    //this is to test the organization is not deleted but just the organization-user association only.
+    @Test
+    public void deleteMyOrganizationWith3UserAssociation() {
+        UUID userId = UUID.randomUUID();
+        final String authenticationId = "sonam";
+        Jwt jwt = jwt(authenticationId, userId);
+
+        Organization organization = new Organization(null, "My good dog food compay", userId);
+        organizationRepository.save(organization).subscribe();
+        assertThat(organization.getId()).isNotNull();
+
+        OrganizationUser organizationUser = new OrganizationUser(null, organization.getId(), userId, null);
+        organizationUserRepository.save(organizationUser).subscribe();
+
+        organizationUser = new OrganizationUser(null, organization.getId(), UUID.randomUUID(), null);
+        organizationUserRepository.save(organizationUser).subscribe();
+
+        organizationUser = new OrganizationUser(null, organization.getId(), UUID.randomUUID(), null);
+        organizationUserRepository.save(organizationUser).subscribe();
+
+        webTestClient.mutateWith(mockJwt().jwt(jwt)).delete().uri("/organizations/my/"+organization.getId())
+                .headers(addJwt(jwt))
+                .exchange().expectStatus().isOk().expectBody(Map.class).isEqualTo(Map.of("message", "organization user association deleted only"));
+
+        StepVerifier.create(organizationRepository.findById(organization.getId())).assertNext(organization1 -> {
+            assertThat(organization1.getId()).isEqualTo(organization.getId());
+        }).verifyComplete();
+
+        StepVerifier.create(organizationUserRepository.countByOrganizationId(organization.getId())).
+                assertNext(aLong -> assertThat(aLong).isEqualTo(2)).verifyComplete();
+    }
+
+    // this test is for retrieving organizations by a list of ids
+    @Test
+    public void getOrganizationByIdsIn() {
+        UUID userId = UUID.randomUUID();
+        final String authenticationId = "sonam";
+        Jwt jwt = jwt(authenticationId, userId);
+
+        Organization organization1 = new Organization(null, "My good dog food company", userId);
+        organizationRepository.save(organization1).subscribe();
+
+        Organization organization2 = new Organization(null, "My shoe company", userId);
+        organizationRepository.save(organization2).subscribe();
+
+        Organization organization3 = new Organization(null, "Famous dogs", userId);
+        organizationRepository.save(organization3).subscribe();
+
+        assertNotNull(organization1.getId());
+        assertNotNull(organization2.getId());
+        assertNotNull(organization3.getId());
+
+        List<UUID> ids = List.of(organization1.getId(), organization2.getId(), organization3.getId());
+
+        /*Mono<ArrayList<Organization>> listMono = */
+        EntityExchangeResult<List<Organization>> entityExchangeResult = webTestClient.mutateWith(mockJwt().jwt(jwt))
+                .put().uri("/organizations/ids")
+                .bodyValue(ids)
+                .headers(addJwt(jwt)).accept(MediaType.APPLICATION_JSON)
+                .exchange().expectBody(new ParameterizedTypeReference<List<Organization>>(){}).returnResult();
+        LOG.info("entityExchangeResult: {}",entityExchangeResult.getResponseBody());
+
+        List<Organization> organizationList = entityExchangeResult.getResponseBody();
+
+        LOG.info("assert the list contains the 3 organizations {}", organizationList);
+        assertThat(organizationList.contains(organization1)).isTrue();
+        assertThat(organizationList.contains(organization2)).isTrue();
+        assertThat(organizationList.contains(organization3)).isTrue();
+        assertThat(organizationList.contains(new Organization())).isFalse();
+    }
+
     public UUID createOrganizationPosition(Jwt jwt, UUID orgId, String positionName) {
         LOG.info("saving a organization position");
 
@@ -257,28 +348,25 @@ public class OrganizationRestServiceTest {
     private void deleteMyOrganizationCall(Jwt jwt, UUID userId, UUID orgId) {
         LOG.info("add user to organization");
 
-        webTestClient.mutateWith(mockJwt().jwt(jwt)).delete().uri("/organizations")
+        organizationUserRepository.countByOrganizationId(orgId).subscribe(aLong -> {
+            LOG.info("found {} organizationUsers by orgId: {}", aLong, orgId);
+                });
+
+        webTestClient.mutateWith(mockJwt().jwt(jwt)).delete().uri("/organizations/my/"+orgId)
                 .headers(addJwt(jwt))
-                .exchange().expectStatus().isOk().expectBody(Map.class).isEqualTo(Map.of("message", "delete organization success for user id: " + userId));
+                .exchange().expectStatus().isOk().expectBody(Map.class).isEqualTo(Map.of("message", "organization user association deleted only"));
 
 
         StepVerifier.create(organizationRepository.findByCreatorUserId(userId)).expectComplete();
 
-        StepVerifier.create(organizationRepository.countByCreatorUserId(userId)).assertNext(aLong -> {
-            LOG.info("there should be 0 organization: {}", aLong);
-            assertThat(aLong).isEqualTo(0);
+        StepVerifier.create(organizationRepository.findById(orgId)).assertNext(org -> {
+            assertThat(org.getId()).isEqualTo(orgId);
         }).verifyComplete();
 
         StepVerifier.create(organizationUserRepository.countByOrganizationId(orgId)).assertNext(aLong -> {
             LOG.info("there should be 0 organizationUser: {}", aLong);
-            assertThat(aLong).isEqualTo(0);
+            assertThat(aLong).isEqualTo(3);
         }).verifyComplete();
-
-        StepVerifier.create(organizationPositionRepository.countByOrganizationId(orgId)).assertNext(aLong -> {
-            LOG.info("there should be 0 organizationPosition: {}", aLong);
-            assertThat(aLong).isEqualTo(0);
-        }).verifyComplete();
-
     }
 
 

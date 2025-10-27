@@ -30,6 +30,8 @@ public class Router {
                         .and(accept(MediaType.APPLICATION_JSON)), handler::getOrganizationsByOwnerId)
                 .andRoute(GET("/organizations/{id}")
                         .and(accept(MediaType.APPLICATION_JSON)), handler::getOrganizationById)
+                .andRoute(PUT("/organizations/ids")
+                        .and(accept(MediaType.APPLICATION_JSON)), handler::getOrganizationByIds)
                 .andRoute(DELETE("/organizations/{id}")
                         .and(accept(MediaType.APPLICATION_JSON)), handler::deleteOrganization)
                 .andRoute(POST("/organizations/users")
@@ -50,8 +52,8 @@ public class Router {
                         .and(accept(MediaType.APPLICATION_JSON)), handler::getPositionById)
                 .andRoute(DELETE("/organizations/{id}/positions/{positionId}")
                         .and(accept(MediaType.APPLICATION_JSON)), handler::deletePosition)
-                .andRoute(DELETE("/organizations")
-                        .and(accept(MediaType.APPLICATION_JSON)), handler::delete);
+                .andRoute(DELETE("/organizations/my/{organizationId}")
+                        .and(accept(MediaType.APPLICATION_JSON)), handler::deleteMyInfo);
 
 
     }

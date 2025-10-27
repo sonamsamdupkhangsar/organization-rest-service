@@ -8,6 +8,7 @@ public interface Handler {
 
     Mono<ServerResponse> getOrganizationsByOwnerId(ServerRequest serverRequest);
     Mono<ServerResponse> getOrganizationById(ServerRequest serverRequest);
+     Mono<ServerResponse> getOrganizationByIds(ServerRequest serverRequest);
      Mono<ServerResponse> createOrganization(ServerRequest serverRequest);
      Mono<ServerResponse> updateOrganization(ServerRequest serverRequest);
      Mono<ServerResponse> deleteOrganization(ServerRequest serverRequest);
@@ -20,5 +21,5 @@ public interface Handler {
     Mono<ServerResponse> deletePosition(ServerRequest serverRequest);
     Mono<ServerResponse> getPositionById(ServerRequest serverRequest);
     Mono<ServerResponse> userExistsInOrganization(ServerRequest serverRequest);
-    Mono<ServerResponse> delete(ServerRequest serverRequest);
+    Mono<ServerResponse> deleteMyInfo(ServerRequest serverRequest);
 }

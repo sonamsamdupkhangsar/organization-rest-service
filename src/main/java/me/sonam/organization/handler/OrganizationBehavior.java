@@ -7,11 +7,13 @@ import org.springframework.data.domain.Pageable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface OrganizationBehavior {
     Mono<Page<Organization>> getOrganizationsByOwnerId(UUID ownerId, Pageable pageable);
     Mono<Organization> getOrganizationById(UUID organizationId);
+    Mono<List<Organization>> getOrganizationByIds(List<UUID> organizationIdList);
     Mono<Organization> createOrganization(Mono<OrganizationBody> organizationBodyMono);
     Mono<Organization> updateOrganization(Mono<OrganizationBody> organizationBodyMono);
     Mono<String> deleteOrganization(UUID applicationId);
@@ -20,5 +22,5 @@ public interface OrganizationBehavior {
     Mono<String> addUserToOrganization(OrganizationUserBody organizationUserBody);
     Mono<Page<UUID>> getOrganizationUsers(UUID organizationId, Pageable pageable);
     Mono<Boolean> userExistsInOrganization(UUID organizationId, UUID userId);
-    Mono<String> deleteMyOrganization();
+    Mono<String> deleteMyOrganization(UUID organizationId);
 }
