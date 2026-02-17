@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Page;
@@ -31,6 +31,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -52,7 +53,7 @@ import static org.springframework.web.reactive.function.client.ExchangeFilterFun
 /**
  * this will test the organization create, update and add users to organization
  */
-
+@AutoConfigureWebTestClient
 @EnableAutoConfiguration
 @ExtendWith(SpringExtension.class)
 @SpringBootTest( classes = Application.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -72,7 +73,7 @@ public class OrganizationRestServiceTest {
     @Autowired
     private WebTestClient webTestClient;
 
-    @MockBean
+    @MockitoBean
     ReactiveJwtDecoder jwtDecoder;
 
     @Before
@@ -143,12 +144,12 @@ public class OrganizationRestServiceTest {
         RestPage<UUID> restPage = entityExchangeResult.getResponseBody();
 
         assertThat(restPage).isNotNull();
-        LOG.info("uuid in restPage: {}", restPage.getContent());
+        LOG.info("uuid in restPage: {}", restPage.content());
 
         LOG.info("assert that only application user exists");
-        assertThat(restPage.getContent().size()).isEqualTo(userIdList.size()); //plus 1 for the creator as there will be a organization user association when created
+        assertThat(restPage.content().size()).isEqualTo(userIdList.size()); //plus 1 for the creator as there will be a organization user association when created
 
-        assertThat(restPage.getContent().containsAll(userIdList)).isTrue();
+        assertThat(restPage.content().containsAll(userIdList)).isTrue();
     }
 
     @Test
@@ -384,21 +385,27 @@ public class OrganizationRestServiceTest {
     }
 
 }
-
 @JsonIgnoreProperties(ignoreUnknown = true, value = {"pageable"})
-class RestPage<T> extends PageImpl<T> {
+record RestPage<T>(List<T> content, int number, int size, long totalElements, int numberOfElements, int totalPages)  {
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public RestPage(@JsonProperty("content") List<T> content,
-                    @JsonProperty("number") int page,
+                    @JsonProperty("number") int number,
                     @JsonProperty("size") int size,
-                    @JsonProperty("totalElements") long total,
-                    @JsonProperty("numberOfElements") int numberOfElements,
-                    @JsonProperty("pageNumber") int pageNumber
+                    @JsonProperty("totalElements") long totalElements,
+                    @JsonProperty("numberOfElements") int numberOfElements
+
     ) {
-        super(content, PageRequest.of(page, size), total);
+        this(content, number, size, totalElements, numberOfElements, calculateTotalPages(totalElements, size));
+    }
+    public boolean isEmpty() {
+        return content.isEmpty();
+    }
+    public static int calculateTotalPages(long totalElements, int pageSize) {
+        if (pageSize == 0) {
+            return 0; // Avoid division by zero
+        }
+        // Use integer arithmetic to ensure correct ceiling calculation
+        return (int) Math.ceil((double) totalElements / pageSize);
     }
 
-    public RestPage(Page<T> page) {
-        super(page.getContent(), page.getPageable(), page.getTotalElements());
-    }
 }

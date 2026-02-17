@@ -10,7 +10,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -22,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+@AutoConfigureWebTestClient
 @EnableAutoConfiguration
 @ExtendWith(SpringExtension.class)
 @SpringBootTest( classes = Application.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -29,6 +33,8 @@ public class OrganizationRestNoJwtIntegTest {
     private static final Logger LOG = LoggerFactory.getLogger(OrganizationRestNoJwtIntegTest.class);
     @Autowired
     private WebTestClient webTestClient;
+    @MockitoBean
+    private ReactiveJwtDecoder jwtDecoder;
 
     @Test
     public void noJwtTestUnAuthorized() {
