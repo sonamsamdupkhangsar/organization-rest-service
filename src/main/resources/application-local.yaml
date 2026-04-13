@@ -11,11 +11,11 @@ EUREKA_HOST: localhost:8761
 EUREKA_USER: test
 EUREKA_PASSWORD: test
 
-ISSUER_ADDRESS: http://api-gateway:9001
+ISSUER_ADDRESS: http://platform.openissuer.test:9001
 
-ISSUER_URI: ${ISSUER_ADDRESS}/issuer
+ISSUER_URI: ${ISSUER_ADDRESS}
 OAUTH_CLIENTS: oauth-client
-#JWT_SET_URI: ${ISSUER_ADDRESS}/issuer/.well-known/jwks.json
+JWT_SET_URI: ${ISSUER_ADDRESS}/oauth2/jwks
 
 eureka:
   client:
