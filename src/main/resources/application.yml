@@ -38,6 +38,9 @@ app:
   schema-init:
     enabled: false
 
+openissuer:
+  trusted-issuer-host-suffixes: ${TRUSTED_ISSUER_HOST_SUFFIXES:openissuer.test,openissuer.com}
+
 permitpath:
   - path: /organizations/api/health/*
     httpMethods: GET

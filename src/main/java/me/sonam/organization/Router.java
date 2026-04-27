@@ -30,6 +30,8 @@ public class Router {
                         .and(accept(MediaType.APPLICATION_JSON)), handler::getOrganizationsByOwnerId)
                 .andRoute(GET("/organizations/{id}")
                         .and(accept(MediaType.APPLICATION_JSON)), handler::getOrganizationById)
+                .andRoute(GET("/organizations/subdomain/{subdomain}")
+                        .and(accept(MediaType.APPLICATION_JSON)), handler::getOrganizationBySubdomain)
                 .andRoute(PUT("/organizations/ids")
                         .and(accept(MediaType.APPLICATION_JSON)), handler::getOrganizationByIds)
                 .andRoute(DELETE("/organizations/{id}")
@@ -40,6 +42,8 @@ public class Router {
                         .and(accept(MediaType.APPLICATION_JSON)), handler::removeUserFromOrganization)
                 .andRoute(GET("/organizations/{id}/users")
                     .and(accept(MediaType.APPLICATION_JSON)), handler::getOrganizationUsers)
+                .andRoute(GET("/organizations/users/{userId}/ids")
+                    .and(accept(MediaType.APPLICATION_JSON)), handler::getOrganizationIdsForUser)
                 .andRoute(GET("/organizations/{id}/users/{userId}")
                         .and(accept(MediaType.APPLICATION_JSON)), handler::userExistsInOrganization)
                 .andRoute(POST("/organizations/{id}/positions")
@@ -52,8 +56,8 @@ public class Router {
                         .and(accept(MediaType.APPLICATION_JSON)), handler::getPositionById)
                 .andRoute(DELETE("/organizations/{id}/positions/{positionId}")
                         .and(accept(MediaType.APPLICATION_JSON)), handler::deletePosition)
-                .andRoute(DELETE("/organizations/my/{organizationId}")
-                        .and(accept(MediaType.APPLICATION_JSON)), handler::deleteMyInfo);
+                .andRoute(DELETE("/organizations/{organizationId}/users/{userId}/data")
+                        .and(accept(MediaType.APPLICATION_JSON)), handler::deleteUserOrganizationData);
 
 
     }

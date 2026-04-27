@@ -8,12 +8,14 @@ public class OrganizationBody {
     private String name;
     private UUID creatorUserId;
     private UUID positionId;
+    private String subdomain;
 
-    public OrganizationBody(UUID id, String name, UUID creatorUserId, UUID positionId) {
+    public OrganizationBody(UUID id, String name, UUID creatorUserId, UUID positionId, String subdomain) {
         this.id = id;
         this.name = name;
         this.creatorUserId = creatorUserId;
         this.positionId = positionId;
+        this.subdomain = subdomain;
     }
 
     public UUID getId() {
@@ -28,5 +30,6 @@ public class OrganizationBody {
         return this.creatorUserId;
     }
     public UUID getPositionId() {return this.positionId;}
+    public String getSubdomain() { return this.subdomain; }
 
 }

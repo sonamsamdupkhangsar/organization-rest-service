@@ -13,6 +13,7 @@ import java.util.UUID;
 public interface OrganizationBehavior {
     Mono<Page<Organization>> getOrganizationsByOwnerId(UUID ownerId, Pageable pageable);
     Mono<Organization> getOrganizationById(UUID organizationId);
+    Mono<Organization> getOrganizationBySubdomain(String subdomain);
     Mono<List<Organization>> getOrganizationByIds(List<UUID> organizationIdList);
     Mono<Organization> createOrganization(Mono<OrganizationBody> organizationBodyMono);
     Mono<Organization> updateOrganization(Mono<OrganizationBody> organizationBodyMono);
@@ -21,6 +22,7 @@ public interface OrganizationBehavior {
     Mono<String> removeUserFromOrganization(UUID userId, UUID organizationId);
     Mono<String> addUserToOrganization(OrganizationUserBody organizationUserBody);
     Mono<Page<UUID>> getOrganizationUsers(UUID organizationId, Pageable pageable);
+    Mono<List<UUID>> getOrganizationIdsForUser(UUID userId);
     Mono<Boolean> userExistsInOrganization(UUID organizationId, UUID userId);
-    Mono<String> deleteMyOrganization(UUID organizationId);
+    Mono<String> deleteOrganizationForUser(UUID organizationId, UUID userId);
 }

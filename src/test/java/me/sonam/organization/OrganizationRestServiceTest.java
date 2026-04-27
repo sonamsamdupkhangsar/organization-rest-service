@@ -89,7 +89,7 @@ public class OrganizationRestServiceTest {
     }
 
     private Organization createOrganization(UUID creatorId, String organizationName, Jwt jwt) {
-        OrganizationBody organizationBody = new OrganizationBody(null, organizationName, creatorId, null);
+        OrganizationBody organizationBody = new OrganizationBody(null, organizationName, creatorId, null, null);
         EntityExchangeResult<Organization> organizationEntityExchangeResult = webTestClient.mutateWith(mockJwt().jwt(jwt))
                 .post().uri("/organizations").headers(addJwt(jwt)).bodyValue(organizationBody)
                 .exchange().expectStatus().isCreated().expectBody(Organization.class).returnResult();
@@ -103,7 +103,7 @@ public class OrganizationRestServiceTest {
     }
 
     private Organization updateOrganization(Organization organization, Jwt jwt) {
-        OrganizationBody organizationBody = new OrganizationBody(organization.getId(), "New Name", organization.getCreatorUserId(), null);
+        OrganizationBody organizationBody = new OrganizationBody(organization.getId(), "New Name", organization.getCreatorUserId(), null, organization.getSubdomain());
         EntityExchangeResult<Organization> organizationEntityExchangeResult = webTestClient.
                 mutateWith(mockJwt().jwt(jwt)).put().uri("/organizations").headers(addJwt(jwt)).bodyValue(organizationBody)
                 .exchange().expectStatus().isOk().expectBody(Organization.class).returnResult();
@@ -187,6 +187,37 @@ public class OrganizationRestServiceTest {
         getOrganizationUsers(List.of(creatorId), organization, jwt);
     }
 
+    @Test
+    public void shouldRejectAddingUserToDifferentOrganization() {
+        UUID creatorId = UUID.randomUUID();
+        Jwt jwt = jwt("sonam", creatorId);
+        when(this.jwtDecoder.decode(anyString())).thenReturn(Mono.just(jwt));
+
+        Organization firstOrganization = createOrganization(creatorId, "Business One", jwt);
+        Organization secondOrganization = createOrganization(creatorId, "Business Two", jwt);
+
+        UUID sharedUserId = UUID.randomUUID();
+        addUserToOrganization(firstOrganization.getId(), sharedUserId, jwt, null);
+
+        webTestClient.mutateWith(mockJwt().jwt(jwt))
+                .post()
+                .uri("/organizations/users")
+                .bodyValue(new OrganizationUserBody(null, secondOrganization.getId(), sharedUserId, null))
+                .headers(addJwt(jwt))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody(Map.class)
+                .value(body -> assertThat(body.get("error")).isEqualTo("user belongs to a different organization"));
+
+        StepVerifier.create(organizationUserRepository.countByOrganizationId(firstOrganization.getId()))
+                .assertNext(count -> assertThat(count).isEqualTo(2))
+                .verifyComplete();
+
+        StepVerifier.create(organizationUserRepository.countByOrganizationId(secondOrganization.getId()))
+                .assertNext(count -> assertThat(count).isEqualTo(1))
+                .verifyComplete();
+    }
+
     @Autowired
     ApplicationContext context;
 
@@ -246,7 +277,7 @@ public class OrganizationRestServiceTest {
         final String authenticationId = "sonam";
         Jwt jwt = jwt(authenticationId, userId);
 
-        Organization organization = new Organization(null, "My good dog food compay", userId);
+        Organization organization = new Organization(null, "My good dog food compay", userId, null);
         organizationRepository.save(organization).subscribe();
         assertThat(organization.getId()).isNotNull();
 
@@ -268,7 +299,7 @@ public class OrganizationRestServiceTest {
         final String authenticationId = "sonam";
         Jwt jwt = jwt(authenticationId, userId);
 
-        Organization organization = new Organization(null, "My good dog food compay", userId);
+        Organization organization = new Organization(null, "My good dog food compay", userId, null);
         organizationRepository.save(organization).subscribe();
         assertThat(organization.getId()).isNotNull();
 
@@ -300,13 +331,13 @@ public class OrganizationRestServiceTest {
         final String authenticationId = "sonam";
         Jwt jwt = jwt(authenticationId, userId);
 
-        Organization organization1 = new Organization(null, "My good dog food company", userId);
+        Organization organization1 = new Organization(null, "My good dog food company", userId, null);
         organizationRepository.save(organization1).subscribe();
 
-        Organization organization2 = new Organization(null, "My shoe company", userId);
+        Organization organization2 = new Organization(null, "My shoe company", userId, null);
         organizationRepository.save(organization2).subscribe();
 
-        Organization organization3 = new Organization(null, "Famous dogs", userId);
+        Organization organization3 = new Organization(null, "Famous dogs", userId, null);
         organizationRepository.save(organization3).subscribe();
 
         assertNotNull(organization1.getId());

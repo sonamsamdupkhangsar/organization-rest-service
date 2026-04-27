@@ -15,8 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -58,6 +56,14 @@ public class OrganizationAssociation implements OrganizationBehavior {
     }
 
     @Override
+    public Mono<Organization> getOrganizationBySubdomain(String subdomain) {
+        LOG.info("find organization by subdomain {}", subdomain);
+        return organizationRepository.findBySubdomain(subdomain)
+                .next()
+                .switchIfEmpty(Mono.error(new OrgException("No organization found with subdomain")));
+    }
+
+    @Override
     public Mono<List<Organization>> getOrganizationByIds(List<UUID> organizationIdList) {
         LOG.info("find organization by id list {}", organizationIdList);
 
@@ -70,7 +76,7 @@ public class OrganizationAssociation implements OrganizationBehavior {
 
         return organizationBodyMono.flatMap(organizationBody ->
                 organizationRepository.save(new Organization(null, organizationBody.getName(),
-                        organizationBody.getCreatorUserId())))
+                        organizationBody.getCreatorUserId(), organizationBody.getSubdomain())))
                 .doOnNext(organization -> LOG.info("saved organization {}", organization))
                 .flatMap(organization->
                         Mono.just(new OrganizationUser
@@ -87,7 +93,7 @@ public class OrganizationAssociation implements OrganizationBehavior {
 
         return organizationBodyMono.flatMap(organizationBody ->
                 organizationRepository.save(new Organization(organizationBody.getId(),
-                        organizationBody.getName(), organizationBody.getCreatorUserId())));
+                        organizationBody.getName(), organizationBody.getCreatorUserId(), organizationBody.getSubdomain())));
     }
 
     @Override
@@ -112,12 +118,29 @@ public class OrganizationAssociation implements OrganizationBehavior {
         return organizationUserRepository.existsByOrganizationIdAndUserId(
                         organizationUserBody.getOrganizationId(), organizationUserBody.getUserId())
                 .doOnNext(aBoolean -> LOG.info("exists by orgIdAndUserId already?: {}", aBoolean))
-                .filter(aBoolean -> !aBoolean)
-                .map(aBoolean -> new OrganizationUser
-                        (null, organizationUserBody.getOrganizationId(), organizationUserBody.getUserId(),
-                                organizationUserBody.getPositionId()))
-                .flatMap(organizationUser -> organizationUserRepository.save(organizationUser))
-                .thenReturn("added user to organization");
+                .flatMap(exists -> {
+                    if (exists) {
+                        return Mono.just("user already exists in organization");
+                    }
+                    return getOrganizationIdsForUser(organizationUserBody.getUserId())
+                            .flatMap(organizationIds -> {
+                                boolean belongsToDifferentOrganization = organizationIds.stream()
+                                        .anyMatch(organizationId -> !organizationId.equals(organizationUserBody.getOrganizationId()));
+
+                                if (belongsToDifferentOrganization) {
+                                    return Mono.error(new IllegalArgumentException(
+                                            "user belongs to a different organization"));
+                                }
+
+                                OrganizationUser organizationUser = new OrganizationUser(
+                                        null,
+                                        organizationUserBody.getOrganizationId(),
+                                        organizationUserBody.getUserId(),
+                                        organizationUserBody.getPositionId());
+                                return organizationUserRepository.save(organizationUser)
+                                        .thenReturn("added user to organization");
+                            });
+                });
 
     }
 
@@ -133,6 +156,16 @@ public class OrganizationAssociation implements OrganizationBehavior {
     }
 
     @Override
+    public Mono<List<UUID>> getOrganizationIdsForUser(UUID userId) {
+        LOG.info("get organization ids for user {}", userId);
+
+        return organizationUserRepository.findByUserId(userId)
+                .map(OrganizationUser::getOrganizationId)
+                .distinct()
+                .collectList();
+    }
+
+    @Override
     public Mono<Boolean> userExistsInOrganization(UUID organizationId, UUID userId) {
         LOG.info("check if user-id {} exists in organization-id {}", userId, organizationId);
 
@@ -140,32 +173,20 @@ public class OrganizationAssociation implements OrganizationBehavior {
     }
 
     @Override
-    public Mono<String> deleteMyOrganization(UUID organizationId) {
-        return ReactiveSecurityContextHolder.getContext().flatMap(securityContext -> {
-            LOG.info("principal: {}", securityContext.getAuthentication().getPrincipal());
-            org.springframework.security.core.Authentication authentication = securityContext.getAuthentication();
-
-            LOG.info("authentication: {}", authentication);
-            LOG.info("authentication.principal: {}", authentication.getPrincipal());
-            Jwt jwt = (Jwt) authentication.getPrincipal();
-            String userIdString = jwt.getClaim("userId");
-            LOG.info("delete user data for userId: {}", userIdString);
-
-            UUID userId = UUID.fromString(userIdString);
-
-            return organizationUserRepository.deleteByOrganizationIdAndUserId(organizationId, userId)
-                    .flatMap(integer -> organizationUserRepository.countByOrganizationId(organizationId))
-                    .flatMap(aLong -> {
-                        if (aLong > 0) {
-                            LOG.info("there are other users associated to this organization, don't delete the Organization.");
-                            return Mono.just("organization user association deleted only");
-                        } else {
-                            LOG.info("there are no other user associated to this organization, DELETE the Organization too.");
-                            return organizationRepository.deleteById(organizationId)
-                                    .thenReturn("Organization and its user associated deleted");
-                        }
-                    });
-        });
+    public Mono<String> deleteOrganizationForUser(UUID organizationId, UUID userId) {
+        LOG.info("delete organization data for explicit userId: {}", userId);
+        return organizationUserRepository.deleteByOrganizationIdAndUserId(organizationId, userId)
+                .flatMap(integer -> organizationUserRepository.countByOrganizationId(organizationId))
+                .flatMap(aLong -> {
+                    if (aLong > 0) {
+                        LOG.info("there are other users associated to this organization, don't delete the Organization.");
+                        return Mono.just("organization user association deleted only");
+                    } else {
+                        LOG.info("there are no other user associated to this organization, DELETE the Organization too.");
+                        return organizationRepository.deleteById(organizationId)
+                                .thenReturn("Organization and its user associated deleted");
+                    }
+                });
     }
 
 }

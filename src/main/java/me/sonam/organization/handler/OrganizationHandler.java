@@ -50,6 +50,19 @@ public class OrganizationHandler implements Handler {
                 });
     }
 
+    @Override
+    public Mono<ServerResponse> getOrganizationBySubdomain(ServerRequest serverRequest) {
+        LOG.info("get organization by subdomain");
+
+        return organizationBehavior.getOrganizationBySubdomain(serverRequest.pathVariable("subdomain"))
+                .flatMap(s -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(s))
+                .onErrorResume(throwable -> {
+                    LOG.error("get organization by subdomain failed: {}", throwable.getMessage());
+                    return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(Map.of("error", throwable.getMessage()));
+                });
+    }
+
     public Mono<ServerResponse> getOrganizationByIds(ServerRequest serverRequest) {
         LOG.info("get organization by list of ids");
 
@@ -157,6 +170,22 @@ public class OrganizationHandler implements Handler {
     }
 
     @Override
+    public Mono<ServerResponse> getOrganizationIdsForUser(ServerRequest serverRequest) {
+        final UUID userId = UUID.fromString(serverRequest.pathVariable("userId"));
+        LOG.info("get organization ids for user {}", userId);
+
+        return organizationBehavior.getOrganizationIdsForUser(userId)
+                .flatMap(organizationIds -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(organizationIds))
+                .onErrorResume(throwable -> {
+                    LOG.error("get organization ids for user failed: {}", throwable.getMessage());
+                    return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(Map.of("error", throwable.getMessage()));
+                });
+    }
+
+    @Override
     public Mono<ServerResponse> createOrganizationPosition(ServerRequest serverRequest) {
         LOG.info("create position");
 
@@ -247,12 +276,13 @@ public class OrganizationHandler implements Handler {
      * @return
      */
     @Override
-    public Mono<ServerResponse> deleteMyInfo(ServerRequest serverRequest) {
+    public Mono<ServerResponse> deleteUserOrganizationData(ServerRequest serverRequest) {
         String uuidString = serverRequest.pathVariable("organizationId");
         LOG.info("delete organization information for user with organizationId: {}", uuidString);
         UUID organizationId = UUID.fromString(uuidString);
-
-        return organizationBehavior.deleteMyOrganization(organizationId)
+        return Mono.just(serverRequest.pathVariable("userId"))
+                .map(UUID::fromString)
+                .flatMap(userId -> organizationBehavior.deleteOrganizationForUser(organizationId, userId))
                 .doOnNext(s -> LOG.info("got response: {}",s))
                 .flatMap(s -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(Map.of("message", s)))
