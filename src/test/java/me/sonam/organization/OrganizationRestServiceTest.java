@@ -284,7 +284,8 @@ public class OrganizationRestServiceTest {
         OrganizationUser organizationUser = new OrganizationUser(null, organization.getId(), userId, null);
         organizationUserRepository.save(organizationUser).subscribe();
 
-        webTestClient.mutateWith(mockJwt().jwt(jwt)).delete().uri("/organizations/my/"+organization.getId())
+        webTestClient.mutateWith(mockJwt().jwt(jwt)).delete()
+                .uri("/organizations/" + organization.getId() + "/users/" + userId + "/data")
                 .headers(addJwt(jwt))
                 .exchange().expectStatus().isOk().expectBody(Map.class).isEqualTo(Map.of("message", "Organization and its user associated deleted"));
 
@@ -312,7 +313,8 @@ public class OrganizationRestServiceTest {
         organizationUser = new OrganizationUser(null, organization.getId(), UUID.randomUUID(), null);
         organizationUserRepository.save(organizationUser).subscribe();
 
-        webTestClient.mutateWith(mockJwt().jwt(jwt)).delete().uri("/organizations/my/"+organization.getId())
+        webTestClient.mutateWith(mockJwt().jwt(jwt)).delete()
+                .uri("/organizations/" + organization.getId() + "/users/" + userId + "/data")
                 .headers(addJwt(jwt))
                 .exchange().expectStatus().isOk().expectBody(Map.class).isEqualTo(Map.of("message", "organization user association deleted only"));
 
@@ -384,7 +386,8 @@ public class OrganizationRestServiceTest {
             LOG.info("found {} organizationUsers by orgId: {}", aLong, orgId);
                 });
 
-        webTestClient.mutateWith(mockJwt().jwt(jwt)).delete().uri("/organizations/my/"+orgId)
+        webTestClient.mutateWith(mockJwt().jwt(jwt)).delete()
+                .uri("/organizations/" + orgId + "/users/" + userId + "/data")
                 .headers(addJwt(jwt))
                 .exchange().expectStatus().isOk().expectBody(Map.class).isEqualTo(Map.of("message", "organization user association deleted only"));
 
