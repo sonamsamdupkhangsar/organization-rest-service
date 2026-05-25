@@ -13,13 +13,12 @@ public class Organization implements Persistable<UUID> {
     private UUID id;
     private String name;
     private UUID creatorUserId;
-    private String subdomain;
     @Transient
     private boolean isNew;
     private LocalDateTime created;
 
     public Organization() {}
-    public Organization(UUID id, String name, UUID creatorUserId, String subdomain) {
+    public Organization(UUID id, String name, UUID creatorUserId) {
         if (id != null) {
             this.id = id;
             this.isNew = false;
@@ -30,7 +29,6 @@ public class Organization implements Persistable<UUID> {
         }
         this.name = name;
         this.creatorUserId = creatorUserId;
-        this.subdomain = subdomain;
         this.created = LocalDateTime.now();
     }
 
@@ -40,10 +38,6 @@ public class Organization implements Persistable<UUID> {
 
     public UUID getCreatorUserId() {
         return this.creatorUserId;
-    }
-
-    public String getSubdomain() {
-        return subdomain;
     }
 
     @Override
@@ -63,7 +57,6 @@ public class Organization implements Persistable<UUID> {
                 ", name='" + name + '\'' +
                 ", isNew=" + isNew +
                 ", creatorUserId=" + creatorUserId +
-                ", subdomain='" + subdomain + '\'' +
                 '}';
     }
 
@@ -72,11 +65,11 @@ public class Organization implements Persistable<UUID> {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
         Organization that = (Organization) object;
-        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(creatorUserId, that.creatorUserId) && Objects.equals(subdomain, that.subdomain);
+        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(creatorUserId, that.creatorUserId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, creatorUserId, subdomain);
+        return Objects.hash(id, name, creatorUserId);
     }
 }

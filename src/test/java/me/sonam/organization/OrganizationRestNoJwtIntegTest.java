@@ -42,7 +42,7 @@ public class OrganizationRestNoJwtIntegTest {
         UUID creatorId = UUID.randomUUID();
         final String authenticationId = "sonam";
 
-        OrganizationBody organizationBody = new OrganizationBody(null, "Baggy Pants Company", creatorId, null, null);
+        OrganizationBody organizationBody = new OrganizationBody(null, "Baggy Pants Company", creatorId, null);
         EntityExchangeResult<String> result = webTestClient.post().uri("/organizations")
                 .bodyValue(organizationBody)
                     .exchange().expectStatus().isUnauthorized().expectBody(String.class).returnResult();

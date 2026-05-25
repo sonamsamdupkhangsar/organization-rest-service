@@ -17,5 +17,4 @@ public interface OrganizationRepository extends ReactiveCrudRepository<Organizat
     Mono<Integer> deleteByCreatorUserId(UUID userId);
     Flux<Organization> findByCreatorUserId(UUID ownerId);
     Flux<Organization> findByIdIn(List<UUID> ids);
-    Flux<Organization> findBySubdomain(String subdomain);
 }
