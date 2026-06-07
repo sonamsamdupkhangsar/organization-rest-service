@@ -6,6 +6,8 @@ logging:
     org.springframework.security: trace
 
 spring:
+  flyway:
+    enabled: false
   security:
     oauth2:
       resourceserver:
@@ -29,6 +31,12 @@ spring:
 eureka:
   client:
     enabled: false
+
+app:
+  flyway:
+    enabled: false
+  schema-init:
+    enabled: true
 
 permitpath:
   - path: /organizations/api/health/*

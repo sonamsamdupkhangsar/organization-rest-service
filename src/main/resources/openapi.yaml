@@ -132,6 +132,226 @@ paths:
           content:
             application/schema:
               $ref: '#/components/schemas/BadRequestBody'
+  /organizations/subdomain/{subdomain}:
+    get:
+      description: get first organization mapped to a subdomain
+      parameters:
+        - name: subdomain
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully retrieved organization by subdomain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '400':
+          description: No organization found with subdomain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestBody'
+  /organizations/subdomain/{subdomain}/organizations:
+    get:
+      description: get organizations mapped to a subdomain
+      parameters:
+        - name: subdomain
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully retrieved organizations by subdomain
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Organization'
+        '400':
+          description: failed to retrieve organizations by subdomain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestBody'
+  /organizations/subdomain/{subdomain}/users/{userId}/organizations/{organizationId}:
+    get:
+      description: check that an organization is mapped to a subdomain and contains the user
+      parameters:
+        - name: subdomain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully checked user organization membership within subdomain
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: boolean
+        '400':
+          description: failed to check user organization membership within subdomain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestBody'
+  /organizations/subdomain/{subdomain}/users/{userId}/organizations/{organizationId}/can-add:
+    get:
+      description: preflight check for adding an existing user to an organization within a subdomain boundary
+      parameters:
+        - name: subdomain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully checked whether user can be added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanAddUserResponseBody'
+  /organizations/subdomain/{subdomain}/users/{userId}/default-organization-id:
+    get:
+      description: get the user's default organization id if it is mapped to the subdomain
+      parameters:
+        - name: subdomain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully retrieved default organization id for subdomain and user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    format: uuid
+        '400':
+          description: failed to retrieve default organization id for subdomain and user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestBody'
+  /organizations/subdomain/{subdomain}/organizations/{organizationId}/can-add-user:
+    get:
+      description: preflight check for adding a new user to an organization within a subdomain boundary
+      parameters:
+        - name: subdomain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully checked whether organization can accept users from subdomain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanAddUserResponseBody'
+  /organizations/subdomain/{subdomain}/organizations/{organizationId}:
+    post:
+      description: map an organization to a subdomain
+      parameters:
+        - name: subdomain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully mapped organization to subdomain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponseBody'
+        '400':
+          description: failed to map organization to subdomain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestBody'
+    delete:
+      description: remove an organization from a subdomain
+      parameters:
+        - name: subdomain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully removed organization from subdomain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponseBody'
+        '400':
+          description: failed to remove organization from subdomain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestBody'
   /organizations/users:
     put:
       description: Update list of organization user association
@@ -172,6 +392,62 @@ paths:
                 $ref: '#/components/schemas/OrganizationUser'
         '400':
           description: failed to get organization-users for organziation id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestBody'
+  /organizations/{organizationId}/users/{userId}/default:
+    put:
+      description: set the user's default organization
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully set default organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponseBody'
+        '400':
+          description: failed to set default organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestBody'
+  /organizations/users/{userId}/default-organization-id:
+    get:
+      description: get the user's global default organization id
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully retrieved default organization id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    format: uuid
+        '400':
+          description: failed to retrieve default organization id
           content:
             application/json:
               schema:
@@ -232,6 +508,12 @@ components:
                 - add
                 - update
                 - delete
+            subdomain:
+              type: string
+              description: Subdomain boundary to enforce when restrictToSubdomain is true.
+            restrictToSubdomain:
+              type: boolean
+              description: When true, rejects adding the user if they already belong to an organization mapped to another subdomain.
     BadRequestBody:
       type: object
       properties:
@@ -243,6 +525,13 @@ components:
         message:
           type: string
           format: uuid
+    CanAddUserResponseBody:
+      type: object
+      properties:
+        message:
+          type: boolean
+        reason:
+          type: string
     OkResponseBody:
       type: object
       properties:

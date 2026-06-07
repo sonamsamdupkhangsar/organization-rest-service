@@ -13,14 +13,25 @@ import java.util.UUID;
 public interface OrganizationBehavior {
     Mono<Page<Organization>> getOrganizationsByOwnerId(UUID ownerId, Pageable pageable);
     Mono<Organization> getOrganizationById(UUID organizationId);
+    Mono<Organization> getOrganizationBySubdomain(String subdomain);
+    Mono<List<Organization>> getOrganizationsBySubdomain(String subdomain);
+    Mono<Boolean> userExistsInSubdomainOrganization(String subdomain, UUID userId, UUID organizationId);
+    Mono<Boolean> canAddUserToSubdomainOrganization(String subdomain, UUID userId, UUID organizationId);
+    Mono<Boolean> canAddUserToSubdomainOrganization(String subdomain, UUID organizationId);
     Mono<List<Organization>> getOrganizationByIds(List<UUID> organizationIdList);
     Mono<Organization> createOrganization(Mono<OrganizationBody> organizationBodyMono);
     Mono<Organization> updateOrganization(Mono<OrganizationBody> organizationBodyMono);
     Mono<String> deleteOrganization(UUID applicationId);
+    Mono<String> addOrganizationToSubdomain(String subdomain, UUID organizationId);
+    Mono<String> removeOrganizationFromSubdomain(String subdomain, UUID organizationId);
+    Mono<String> setDefaultOrganization(UUID organizationId, UUID userId);
+    Mono<UUID> getDefaultOrganizationIdForUser(UUID userId);
+    Mono<UUID> getDefaultOrganizationIdBySubdomainAndUserId(String subdomain, UUID userId);
     //Mono<String> updateOrganizationUsers(Mono<OrganizationUserBody> organizationUserBodyFlux);
     Mono<String> removeUserFromOrganization(UUID userId, UUID organizationId);
     Mono<String> addUserToOrganization(OrganizationUserBody organizationUserBody);
     Mono<Page<UUID>> getOrganizationUsers(UUID organizationId, Pageable pageable);
+    Mono<List<UUID>> getOrganizationIdsForUser(UUID userId);
     Mono<Boolean> userExistsInOrganization(UUID organizationId, UUID userId);
-    Mono<String> deleteMyOrganization(UUID organizationId);
+    Mono<String> deleteOrganizationForUser(UUID organizationId, UUID userId);
 }

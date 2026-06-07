@@ -13,17 +13,33 @@ logging:
 spring:
   application:
     name: organization-rest-service
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_SERVICE}/${POSTGRES_DBNAME}
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
   r2dbc:
     url: r2dbc:postgresql://${POSTGRES_SERVICE}/${POSTGRES_DBNAME}
     username: ${POSTGRES_USERNAME}
     password: ${POSTGRES_PASSWORD}
     properties:
       sslMode: ${DB_SSLMODE}
+  flyway:
+    enabled: false
+    baseline-on-migrate: true
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${ISSUER_URI}
+          jwk-set-uri: ${JWT_SET_URI}
+
+app:
+  flyway:
+    enabled: true
+  schema-init:
+    enabled: false
+
+openissuer:
+  trusted-issuer-host-suffixes: ${TRUSTED_ISSUER_HOST_SUFFIXES:openissuer.test,openissuer.com}
 
 permitpath:
   - path: /organizations/api/health/*
