@@ -3,8 +3,17 @@ This service maintains the organization, the associated users and their associat
 
 
 ## Run
-For running locally using local profile:
-`./gradlew bootRun --args="--spring.profiles.active=local"`
+Run locally with the Eureka profile, which picks up properties defined in `application-eureka.yaml`:
+
+```
+SPRING_PROFILES_ACTIVE=eureka ./gradlew bootRun
+```
+
+For local HTTPS:
+
+```
+SPRING_PROFILES_ACTIVE=eureka,local-https ./gradlew bootRun
+```
 
 ## Build Docker image
 Gradle build:
@@ -16,9 +25,9 @@ Docker build passing in username and personal access token varaibles into docker
 docker build --secret id=USERNAME,env=USERNAME --secret id=PERSONAL_ACCESS_TOKEN,env=PERSONAL_ACCESS_TOKEN . -t my/organization-rest-service
 ```
 
-Pass local profile as argument:
+Pass the Eureka profile as argument:
 ```
- docker run -e --spring.profiles.active=local -p 9001:9001 -t myorg/organization-rest-service
+docker run -e SPRING_PROFILES_ACTIVE=eureka -p 8088:8088 -t myorg/organization-rest-service
 ```
 
 or pass the environment variables for database information:
