@@ -4,6 +4,7 @@ import me.sonam.organization.handler.OrgException;
 import me.sonam.organization.handler.OrganizationBehavior;
 import me.sonam.organization.handler.OrganizationBody;
 import me.sonam.organization.handler.OrganizationUserBody;
+import me.sonam.organization.handler.SubdomainOrganizationUser;
 import me.sonam.organization.repo.OrganizationPositionRepository;
 import me.sonam.organization.repo.OrganizationRepository;
 import me.sonam.organization.repo.OrganizationUserRepository;
@@ -102,6 +103,31 @@ public class OrganizationAssociation implements OrganizationBehavior {
                         .collectList()
                         .zipWith(subdomainOrganizationRepository.countBySubdomainId(subdomainEntity.getId()))
                         .map(objects -> new PageImpl<>(objects.getT1(), pageable, objects.getT2())));
+    }
+
+    @Override
+    public Mono<Page<SubdomainOrganizationUser>> getUsersBySubdomain(String subdomain, Pageable pageable) {
+        String normalizedSubdomain = normalizeSubdomain(subdomain);
+        LOG.info("find users by subdomain {}", normalizedSubdomain);
+
+        return subdomainRepository.findByHost(normalizedSubdomain)
+                .switchIfEmpty(Mono.error(new OrgException("No subdomain found")))
+                .flatMap(subdomainEntity -> subdomainOrganizationRepository
+                        .findBySubdomainIdOrderByCreatedAsc(subdomainEntity.getId())
+                        .concatMap(subdomainOrganization -> organizationRepository
+                                .findById(subdomainOrganization.getOrganizationId())
+                                .flatMapMany(organization -> organizationUserRepository
+                                        .findByOrganizationId(organization.getId())
+                                        .map(organizationUser -> new SubdomainOrganizationUser(
+                                                organizationUser.getUserId(), organization.getId(), organization.getName()))))
+                        .collectList()
+                        .map(memberships -> {
+                            List<SubdomainOrganizationUser> pageContent = memberships.stream()
+                                        .skip(pageable.getOffset())
+                                        .limit(pageable.getPageSize())
+                                        .toList();
+                            return new PageImpl<SubdomainOrganizationUser>(pageContent, pageable, memberships.size());
+                        }));
     }
 
     @Override

@@ -11,6 +11,7 @@ public interface Handler {
     Mono<ServerResponse> getSubdomainByHost(ServerRequest serverRequest);
     Mono<ServerResponse> getOrganizationBySubdomain(ServerRequest serverRequest);
     Mono<ServerResponse> getOrganizationsBySubdomain(ServerRequest serverRequest);
+    Mono<ServerResponse> getUsersBySubdomain(ServerRequest serverRequest);
     Mono<ServerResponse> userExistsInSubdomainOrganization(ServerRequest serverRequest);
     Mono<ServerResponse> organizationExistsInSubdomain(ServerRequest serverRequest);
      Mono<ServerResponse> getOrganizationByIds(ServerRequest serverRequest);

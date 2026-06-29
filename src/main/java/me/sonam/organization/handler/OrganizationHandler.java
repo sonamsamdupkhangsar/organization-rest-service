@@ -92,6 +92,20 @@ public class OrganizationHandler implements Handler {
     }
 
     @Override
+    public Mono<ServerResponse> getUsersBySubdomain(ServerRequest serverRequest) {
+        LOG.info("get users by subdomain");
+        Pageable pageable = Util.getPageable(serverRequest);
+
+        return organizationBehavior.getUsersBySubdomain(serverRequest.pathVariable("subdomain"), pageable)
+                .flatMap(users -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(users))
+                .onErrorResume(throwable -> {
+                    LOG.error("get users by subdomain failed: {}", throwable.getMessage());
+                    return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(Map.of("error", throwable.getMessage()));
+                });
+    }
+
+    @Override
     public Mono<ServerResponse> userExistsInSubdomainOrganization(ServerRequest serverRequest) {
         LOG.info("check user exists in subdomain organization");
 

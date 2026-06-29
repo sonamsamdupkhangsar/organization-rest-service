@@ -178,6 +178,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestBody'
+  /organizations/subdomain/{subdomain}/users:
+    get:
+      description: get users across organizations mapped to a subdomain
+      parameters:
+        - name: subdomain
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: size
+          in: query
+          description: number of items on a page
+          schema:
+            type: integer
+        - name: page
+          in: query
+          description: Page number of user organization memberships to retrieve
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully retrieved users by subdomain
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      content:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SubdomainOrganizationUser'
+        '400':
+          description: failed to retrieve users by subdomain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestBody'
   /organizations/subdomain/{subdomain}/users/{userId}/organizations/{organizationId}:
     get:
       description: check that an organization is mapped to a subdomain and contains the user
@@ -489,6 +528,17 @@ components:
             restrictToSubdomain:
               type: boolean
               description: When true, rejects adding the user if they already belong to an organization mapped to another subdomain.
+    SubdomainOrganizationUser:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        organizationId:
+          type: string
+          format: uuid
+        organizationName:
+          type: string
     BadRequestBody:
       type: object
       properties:

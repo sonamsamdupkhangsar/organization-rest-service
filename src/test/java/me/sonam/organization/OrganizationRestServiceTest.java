@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import me.sonam.organization.handler.OrganizationBody;
 import me.sonam.organization.handler.OrganizationUserBody;
+import me.sonam.organization.handler.SubdomainOrganizationUser;
 import me.sonam.organization.repo.OrganizationPositionRepository;
 import me.sonam.organization.repo.OrganizationRepository;
 import me.sonam.organization.repo.OrganizationUserRepository;
@@ -340,6 +341,23 @@ public class OrganizationRestServiceTest {
                 .containsExactly(firstOrganization.getId());
         assertThat(result.getResponseBody().totalElements()).isEqualTo(2);
         assertThat(result.getResponseBody().totalPages()).isEqualTo(2);
+
+        EntityExchangeResult<RestPage<SubdomainOrganizationUser>> usersResult = webTestClient.mutateWith(mockJwt().jwt(jwt))
+                .get()
+                .uri("/organizations/subdomain/" + subdomain + "/users?page=0&size=1")
+                .headers(addJwt(jwt))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(new ParameterizedTypeReference<RestPage<SubdomainOrganizationUser>>() {})
+                .returnResult();
+
+        assertThat(usersResult.getResponseBody()).isNotNull();
+        assertThat(usersResult.getResponseBody().content()).hasSize(1);
+        assertThat(usersResult.getResponseBody().content().getFirst().userId()).isEqualTo(creatorId);
+        assertThat(usersResult.getResponseBody().content().getFirst().organizationId()).isEqualTo(firstOrganization.getId());
+        assertThat(usersResult.getResponseBody().content().getFirst().organizationName()).isEqualTo(firstOrganization.getName());
+        assertThat(usersResult.getResponseBody().totalElements()).isEqualTo(2);
+        assertThat(usersResult.getResponseBody().totalPages()).isEqualTo(2);
 
         EntityExchangeResult<Organization> singleResult = webTestClient.mutateWith(mockJwt().jwt(jwt))
                 .get()
