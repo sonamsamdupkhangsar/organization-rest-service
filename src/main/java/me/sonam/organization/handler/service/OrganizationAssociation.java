@@ -101,7 +101,7 @@ public class OrganizationAssociation implements OrganizationBehavior {
                         .concatMap(organizationRepository::findById)
                         .collectList()
                         .zipWith(subdomainOrganizationRepository.countBySubdomainId(subdomainEntity.getId()))
-                        .map(objects -> new PageI  mpl<>(objects.getT1(), pageable, objects.getT2())));
+                        .map(objects -> new PageImpl<>(objects.getT1(), pageable, objects.getT2())));
     }
 
     @Override
