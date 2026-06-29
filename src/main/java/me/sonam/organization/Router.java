@@ -30,6 +30,8 @@ public class Router {
                         .and(accept(MediaType.APPLICATION_JSON)), handler::getOrganizationsByOwnerId)
                 .andRoute(GET("/organizations/{id}")
                         .and(accept(MediaType.APPLICATION_JSON)), handler::getOrganizationById)
+                .andRoute(GET("/organizations/subdomains/{subdomain}")
+                        .and(accept(MediaType.APPLICATION_JSON)), handler::getSubdomainByHost)
                 .andRoute(GET("/organizations/subdomain/{subdomain}/organizations")
                         .and(accept(MediaType.APPLICATION_JSON)), handler::getOrganizationsBySubdomain)
                 .andRoute(GET("/organizations/subdomain/{subdomain}/users/{userId}/organizations/{organizationId}")

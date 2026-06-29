@@ -72,6 +72,15 @@ public class OrganizationAssociation implements OrganizationBehavior {
     }
 
     @Override
+    public Mono<Subdomain> getSubdomainByHost(String subdomain) {
+        String normalizedSubdomain = normalizeSubdomain(subdomain);
+        LOG.info("find subdomain by host {}", normalizedSubdomain);
+
+        return subdomainRepository.findByHost(normalizedSubdomain)
+                .switchIfEmpty(Mono.error(new OrgException("No subdomain found")));
+    }
+
+    @Override
     public Mono<Organization> getOrganizationBySubdomain(String subdomain) {
         LOG.info("find organization by subdomain {}", subdomain);
         return findOrganizationsByMappedSubdomain(normalizeSubdomain(subdomain))

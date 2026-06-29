@@ -8,6 +8,7 @@ public interface Handler {
 
     Mono<ServerResponse> getOrganizationsByOwnerId(ServerRequest serverRequest);
     Mono<ServerResponse> getOrganizationById(ServerRequest serverRequest);
+    Mono<ServerResponse> getSubdomainByHost(ServerRequest serverRequest);
     Mono<ServerResponse> getOrganizationBySubdomain(ServerRequest serverRequest);
     Mono<ServerResponse> getOrganizationsBySubdomain(ServerRequest serverRequest);
     Mono<ServerResponse> userExistsInSubdomainOrganization(ServerRequest serverRequest);

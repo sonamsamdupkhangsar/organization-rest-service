@@ -52,6 +52,19 @@ public class OrganizationHandler implements Handler {
     }
 
     @Override
+    public Mono<ServerResponse> getSubdomainByHost(ServerRequest serverRequest) {
+        LOG.info("get subdomain by host");
+
+        return organizationBehavior.getSubdomainByHost(serverRequest.pathVariable("subdomain"))
+                .flatMap(subdomain -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(subdomain))
+                .onErrorResume(throwable -> {
+                    LOG.error("get subdomain by host failed: {}", throwable.getMessage());
+                    return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(Map.of("error", throwable.getMessage()));
+                });
+    }
+
+    @Override
     public Mono<ServerResponse> getOrganizationBySubdomain(ServerRequest serverRequest) {
         LOG.info("get organization by subdomain");
 

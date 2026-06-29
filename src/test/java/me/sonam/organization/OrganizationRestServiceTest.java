@@ -13,6 +13,7 @@ import me.sonam.organization.repo.SubdomainRepository;
 import me.sonam.organization.repo.UserDefaultOrganizationRepository;
 import me.sonam.organization.repo.entity.Organization;
 import me.sonam.organization.repo.entity.OrganizationUser;
+import me.sonam.organization.repo.entity.Subdomain;
 import org.junit.Before;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -352,6 +353,19 @@ public class OrganizationRestServiceTest {
 
         assertThat(singleResult.getResponseBody()).isNotNull();
         assertThat(singleResult.getResponseBody().getId()).isEqualTo(firstOrganization.getId());
+
+        EntityExchangeResult<Subdomain> subdomainResult = webTestClient.mutateWith(mockJwt().jwt(jwt))
+                .get()
+                .uri("/organizations/subdomains/" + subdomain)
+                .headers(addJwt(jwt))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Subdomain.class)
+                .returnResult();
+
+        assertThat(subdomainResult.getResponseBody()).isNotNull();
+        assertThat(subdomainResult.getResponseBody().getHost()).isEqualTo(subdomain);
+        assertThat(subdomainResult.getResponseBody().getId()).isNotNull();
 
         webTestClient.mutateWith(mockJwt().jwt(jwt))
                 .get()
