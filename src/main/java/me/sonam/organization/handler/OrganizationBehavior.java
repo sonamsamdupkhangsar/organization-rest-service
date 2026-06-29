@@ -16,7 +16,7 @@ public interface OrganizationBehavior {
     Mono<Organization> getOrganizationById(UUID organizationId);
     Mono<Subdomain> getSubdomainByHost(String subdomain);
     Mono<Organization> getOrganizationBySubdomain(String subdomain);
-    Mono<List<Organization>> getOrganizationsBySubdomain(String subdomain);
+    Mono<Page<Organization>> getOrganizationsBySubdomain(String subdomain, Pageable pageable);
     Mono<Boolean> userExistsInSubdomainOrganization(String subdomain, UUID userId, UUID organizationId);
     Mono<Boolean> canAddUserToSubdomainOrganization(String subdomain, UUID userId, UUID organizationId);
     Mono<Boolean> canAddUserToSubdomainOrganization(String subdomain, UUID organizationId);

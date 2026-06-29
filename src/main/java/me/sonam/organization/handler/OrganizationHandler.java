@@ -80,8 +80,9 @@ public class OrganizationHandler implements Handler {
     @Override
     public Mono<ServerResponse> getOrganizationsBySubdomain(ServerRequest serverRequest) {
         LOG.info("get organizations by subdomain");
+        Pageable pageable = Util.getPageable(serverRequest);
 
-        return organizationBehavior.getOrganizationsBySubdomain(serverRequest.pathVariable("subdomain"))
+        return organizationBehavior.getOrganizationsBySubdomain(serverRequest.pathVariable("subdomain"), pageable)
                 .flatMap(organizations -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(organizations))
                 .onErrorResume(throwable -> {
                     LOG.error("get organizations by subdomain failed: {}", throwable.getMessage());

@@ -328,19 +328,21 @@ public class OrganizationRestServiceTest {
                 .expectBody(Map.class)
                 .isEqualTo(Map.of("message", true));
 
-        EntityExchangeResult<List<Organization>> result = webTestClient.mutateWith(mockJwt().jwt(jwt))
+        EntityExchangeResult<RestPage<Organization>> result = webTestClient.mutateWith(mockJwt().jwt(jwt))
                 .get()
-                .uri("/organizations/subdomain/" + subdomain + "/organizations")
+                .uri("/organizations/subdomain/" + subdomain + "/organizations?page=0&size=1")
                 .headers(addJwt(jwt))
                 .exchange()
                 .expectStatus().isOk()
-                .expectBody(new ParameterizedTypeReference<List<Organization>>() {})
+                .expectBody(new ParameterizedTypeReference<RestPage<Organization>>() {})
                 .returnResult();
 
         assertThat(result.getResponseBody()).isNotNull();
-        assertThat(result.getResponseBody())
+        assertThat(result.getResponseBody().content())
                 .extracting(Organization::getId)
-                .containsExactly(firstOrganization.getId(), secondOrganization.getId());
+                .containsExactly(firstOrganization.getId());
+        assertThat(result.getResponseBody().totalElements()).isEqualTo(2);
+        assertThat(result.getResponseBody().totalPages()).isEqualTo(2);
 
         EntityExchangeResult<Organization> singleResult = webTestClient.mutateWith(mockJwt().jwt(jwt))
                 .get()

@@ -89,12 +89,19 @@ public class OrganizationAssociation implements OrganizationBehavior {
     }
 
     @Override
-    public Mono<List<Organization>> getOrganizationsBySubdomain(String subdomain) {
+    public Mono<Page<Organization>> getOrganizationsBySubdomain(String subdomain, Pageable pageable) {
         String normalizedSubdomain = normalizeSubdomain(subdomain);
         LOG.info("find organizations by subdomain {}", normalizedSubdomain);
 
-        return findOrganizationsByMappedSubdomain(normalizedSubdomain)
-                .collectList();
+        return subdomainRepository.findByHost(normalizedSubdomain)
+                .switchIfEmpty(Mono.error(new OrgException("No subdomain found")))
+                .flatMap(subdomainEntity -> subdomainOrganizationRepository
+                        .findBySubdomainIdOrderByCreatedAsc(subdomainEntity.getId(), pageable)
+                        .map(SubdomainOrganization::getOrganizationId)
+                        .concatMap(organizationRepository::findById)
+                        .collectList()
+                        .zipWith(subdomainOrganizationRepository.countBySubdomainId(subdomainEntity.getId()))
+                        .map(objects -> new PageI  mpl<>(objects.getT1(), pageable, objects.getT2())));
     }
 
     @Override
