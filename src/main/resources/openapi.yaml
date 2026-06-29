@@ -215,34 +215,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestBody'
-  /organizations/subdomain/{subdomain}/users/{userId}/organizations/{organizationId}/can-add:
-    get:
-      description: preflight check for adding an existing user to an organization within a subdomain boundary
-      parameters:
-        - name: subdomain
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: organizationId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Successfully checked whether user can be added
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CanAddUserResponseBody'
   /organizations/subdomain/{subdomain}/users/{userId}/default-organization-id:
     get:
       description: get the user's default organization id if it is mapped to the subdomain
@@ -275,9 +247,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestBody'
-  /organizations/subdomain/{subdomain}/organizations/{organizationId}/can-add-user:
+  /organizations/subdomain/{subdomain}/organizations/{organizationId}/exists:
     get:
-      description: preflight check for adding a new user to an organization within a subdomain boundary
+      description: check whether an organization is mapped to a subdomain
       parameters:
         - name: subdomain
           in: path
@@ -292,11 +264,14 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Successfully checked whether organization can accept users from subdomain
+          description: Successfully checked whether organization is mapped to subdomain
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CanAddUserResponseBody'
+                type: object
+                properties:
+                  message:
+                    type: boolean
   /organizations/subdomain/{subdomain}/organizations/{organizationId}:
     post:
       description: map an organization to a subdomain

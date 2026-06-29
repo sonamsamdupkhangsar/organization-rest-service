@@ -123,19 +123,14 @@ public class OrganizationAssociation implements OrganizationBehavior {
     }
 
     @Override
-    public Mono<Boolean> canAddUserToSubdomainOrganization(String subdomain, UUID userId, UUID organizationId) {
-        LOG.info("check if user {} can be added to organization {} in subdomain {}",
-                userId, organizationId, subdomain);
-        return validateSubdomainMembershipBoundary(new OrganizationUserBody(null, organizationId, userId, null,
-                subdomain, true))
-                .thenReturn(true);
-    }
+    public Mono<Boolean> organizationExistsInSubdomain(String subdomain, UUID organizationId) {
+        String normalizedSubdomain = normalizeSubdomain(subdomain);
+        LOG.info("check if organization {} is mapped to subdomain {}", organizationId, normalizedSubdomain);
 
-    @Override
-    public Mono<Boolean> canAddUserToSubdomainOrganization(String subdomain, UUID organizationId) {
-        LOG.info("check if organization {} can accept users from subdomain {}", organizationId, subdomain);
-        return validateOrganizationMappedToSubdomain(subdomain, organizationId)
-                .thenReturn(true);
+        return subdomainRepository.findByHost(normalizedSubdomain)
+                .flatMap(subdomainEntity -> subdomainOrganizationRepository
+                        .existsBySubdomainIdAndOrganizationId(subdomainEntity.getId(), organizationId))
+                .defaultIfEmpty(false);
     }
 
     @Override

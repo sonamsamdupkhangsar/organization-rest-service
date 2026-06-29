@@ -109,35 +109,18 @@ public class OrganizationHandler implements Handler {
     }
 
     @Override
-    public Mono<ServerResponse> canAddUserToSubdomainOrganization(ServerRequest serverRequest) {
-        LOG.info("check user can be added to subdomain organization");
+    public Mono<ServerResponse> organizationExistsInSubdomain(ServerRequest serverRequest) {
+        LOG.info("check organization exists in subdomain");
 
-        return organizationBehavior.canAddUserToSubdomainOrganization(
-                        serverRequest.pathVariable("subdomain"),
-                        UUID.fromString(serverRequest.pathVariable("userId")),
-                        UUID.fromString(serverRequest.pathVariable("organizationId")))
-                .flatMap(allowed -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(Map.of("message", allowed)))
-                .onErrorResume(throwable -> {
-                    LOG.error("check user can be added to subdomain organization failed: {}", throwable.getMessage());
-                    return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
-                            .bodyValue(Map.of("message", false, "reason", throwable.getMessage()));
-                });
-    }
-
-    @Override
-    public Mono<ServerResponse> canAddUserToSubdomainOrganizationWithoutUser(ServerRequest serverRequest) {
-        LOG.info("check organization can accept users from subdomain");
-
-        return organizationBehavior.canAddUserToSubdomainOrganization(
+        return organizationBehavior.organizationExistsInSubdomain(
                         serverRequest.pathVariable("subdomain"),
                         UUID.fromString(serverRequest.pathVariable("organizationId")))
-                .flatMap(allowed -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(Map.of("message", allowed)))
+                .flatMap(exists -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(Map.of("message", exists)))
                 .onErrorResume(throwable -> {
-                    LOG.error("check organization can accept users from subdomain failed: {}", throwable.getMessage());
-                    return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
-                            .bodyValue(Map.of("message", false, "reason", throwable.getMessage()));
+                    LOG.error("check organization exists in subdomain failed: {}", throwable.getMessage());
+                    return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(Map.of("error", throwable.getMessage()));
                 });
     }
 

@@ -283,19 +283,6 @@ public class OrganizationRestServiceTest {
                 .expectBody(Map.class)
                 .value(body -> assertThat(body.get("error")).isEqualTo("user belongs to a different subdomain"));
 
-        webTestClient.mutateWith(mockJwt().jwt(jwt))
-                .get()
-                .uri("/organizations/subdomain/" + businessTwoSubdomain + "/users/" + sharedUserId
-                        + "/organizations/" + businessTwoOrganization.getId() + "/can-add")
-                .headers(addJwt(jwt))
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(Map.class)
-                .value(body -> {
-                    assertThat(body.get("message")).isEqualTo(false);
-                    assertThat(body.get("reason")).isEqualTo("user belongs to a different subdomain");
-                });
-
         StepVerifier.create(organizationUserRepository.countByOrganizationId(businessOneOrganization.getId()))
                 .assertNext(count -> assertThat(count).isEqualTo(2))
                 .verifyComplete();
@@ -321,12 +308,22 @@ public class OrganizationRestServiceTest {
         webTestClient.mutateWith(mockJwt().jwt(jwt))
                 .get()
                 .uri("/organizations/subdomain/" + subdomain + "/organizations/" + firstOrganization.getId()
-                        + "/can-add-user")
+                        + "/exists")
                 .headers(addJwt(jwt))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(Map.class)
                 .isEqualTo(Map.of("message", true));
+
+        webTestClient.mutateWith(mockJwt().jwt(jwt))
+                .get()
+                .uri("/organizations/subdomain/" + subdomain + "/organizations/" + UUID.randomUUID()
+                        + "/exists")
+                .headers(addJwt(jwt))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Map.class)
+                .isEqualTo(Map.of("message", false));
 
         EntityExchangeResult<RestPage<Organization>> result = webTestClient.mutateWith(mockJwt().jwt(jwt))
                 .get()
