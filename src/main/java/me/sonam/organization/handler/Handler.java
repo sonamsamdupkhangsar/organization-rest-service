@@ -8,11 +8,12 @@ public interface Handler {
 
     Mono<ServerResponse> getOrganizationsByOwnerId(ServerRequest serverRequest);
     Mono<ServerResponse> getOrganizationById(ServerRequest serverRequest);
+    Mono<ServerResponse> getSubdomainByHost(ServerRequest serverRequest);
     Mono<ServerResponse> getOrganizationBySubdomain(ServerRequest serverRequest);
     Mono<ServerResponse> getOrganizationsBySubdomain(ServerRequest serverRequest);
+    Mono<ServerResponse> getUsersBySubdomain(ServerRequest serverRequest);
     Mono<ServerResponse> userExistsInSubdomainOrganization(ServerRequest serverRequest);
-    Mono<ServerResponse> canAddUserToSubdomainOrganization(ServerRequest serverRequest);
-    Mono<ServerResponse> canAddUserToSubdomainOrganizationWithoutUser(ServerRequest serverRequest);
+    Mono<ServerResponse> organizationExistsInSubdomain(ServerRequest serverRequest);
      Mono<ServerResponse> getOrganizationByIds(ServerRequest serverRequest);
      Mono<ServerResponse> createOrganization(ServerRequest serverRequest);
      Mono<ServerResponse> updateOrganization(ServerRequest serverRequest);

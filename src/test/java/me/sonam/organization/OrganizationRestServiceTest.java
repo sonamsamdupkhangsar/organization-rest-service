@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import me.sonam.organization.handler.OrganizationBody;
 import me.sonam.organization.handler.OrganizationUserBody;
+import me.sonam.organization.handler.SubdomainOrganizationUser;
 import me.sonam.organization.repo.OrganizationPositionRepository;
 import me.sonam.organization.repo.OrganizationRepository;
 import me.sonam.organization.repo.OrganizationUserRepository;
@@ -13,6 +14,7 @@ import me.sonam.organization.repo.SubdomainRepository;
 import me.sonam.organization.repo.UserDefaultOrganizationRepository;
 import me.sonam.organization.repo.entity.Organization;
 import me.sonam.organization.repo.entity.OrganizationUser;
+import me.sonam.organization.repo.entity.Subdomain;
 import org.junit.Before;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -282,19 +284,6 @@ public class OrganizationRestServiceTest {
                 .expectBody(Map.class)
                 .value(body -> assertThat(body.get("error")).isEqualTo("user belongs to a different subdomain"));
 
-        webTestClient.mutateWith(mockJwt().jwt(jwt))
-                .get()
-                .uri("/organizations/subdomain/" + businessTwoSubdomain + "/users/" + sharedUserId
-                        + "/organizations/" + businessTwoOrganization.getId() + "/can-add")
-                .headers(addJwt(jwt))
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(Map.class)
-                .value(body -> {
-                    assertThat(body.get("message")).isEqualTo(false);
-                    assertThat(body.get("reason")).isEqualTo("user belongs to a different subdomain");
-                });
-
         StepVerifier.create(organizationUserRepository.countByOrganizationId(businessOneOrganization.getId()))
                 .assertNext(count -> assertThat(count).isEqualTo(2))
                 .verifyComplete();
@@ -320,26 +309,55 @@ public class OrganizationRestServiceTest {
         webTestClient.mutateWith(mockJwt().jwt(jwt))
                 .get()
                 .uri("/organizations/subdomain/" + subdomain + "/organizations/" + firstOrganization.getId()
-                        + "/can-add-user")
+                        + "/exists")
                 .headers(addJwt(jwt))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(Map.class)
                 .isEqualTo(Map.of("message", true));
 
-        EntityExchangeResult<List<Organization>> result = webTestClient.mutateWith(mockJwt().jwt(jwt))
+        webTestClient.mutateWith(mockJwt().jwt(jwt))
                 .get()
-                .uri("/organizations/subdomain/" + subdomain + "/organizations")
+                .uri("/organizations/subdomain/" + subdomain + "/organizations/" + UUID.randomUUID()
+                        + "/exists")
                 .headers(addJwt(jwt))
                 .exchange()
                 .expectStatus().isOk()
-                .expectBody(new ParameterizedTypeReference<List<Organization>>() {})
+                .expectBody(Map.class)
+                .isEqualTo(Map.of("message", false));
+
+        EntityExchangeResult<RestPage<Organization>> result = webTestClient.mutateWith(mockJwt().jwt(jwt))
+                .get()
+                .uri("/organizations/subdomain/" + subdomain + "/organizations?page=0&size=1")
+                .headers(addJwt(jwt))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(new ParameterizedTypeReference<RestPage<Organization>>() {})
                 .returnResult();
 
         assertThat(result.getResponseBody()).isNotNull();
-        assertThat(result.getResponseBody())
+        assertThat(result.getResponseBody().content())
                 .extracting(Organization::getId)
-                .containsExactly(firstOrganization.getId(), secondOrganization.getId());
+                .containsExactly(firstOrganization.getId());
+        assertThat(result.getResponseBody().totalElements()).isEqualTo(2);
+        assertThat(result.getResponseBody().totalPages()).isEqualTo(2);
+
+        EntityExchangeResult<RestPage<SubdomainOrganizationUser>> usersResult = webTestClient.mutateWith(mockJwt().jwt(jwt))
+                .get()
+                .uri("/organizations/subdomain/" + subdomain + "/users?page=0&size=1")
+                .headers(addJwt(jwt))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(new ParameterizedTypeReference<RestPage<SubdomainOrganizationUser>>() {})
+                .returnResult();
+
+        assertThat(usersResult.getResponseBody()).isNotNull();
+        assertThat(usersResult.getResponseBody().content()).hasSize(1);
+        assertThat(usersResult.getResponseBody().content().getFirst().userId()).isEqualTo(creatorId);
+        assertThat(usersResult.getResponseBody().content().getFirst().organizationId()).isEqualTo(firstOrganization.getId());
+        assertThat(usersResult.getResponseBody().content().getFirst().organizationName()).isEqualTo(firstOrganization.getName());
+        assertThat(usersResult.getResponseBody().totalElements()).isEqualTo(2);
+        assertThat(usersResult.getResponseBody().totalPages()).isEqualTo(2);
 
         EntityExchangeResult<Organization> singleResult = webTestClient.mutateWith(mockJwt().jwt(jwt))
                 .get()
@@ -352,6 +370,19 @@ public class OrganizationRestServiceTest {
 
         assertThat(singleResult.getResponseBody()).isNotNull();
         assertThat(singleResult.getResponseBody().getId()).isEqualTo(firstOrganization.getId());
+
+        EntityExchangeResult<Subdomain> subdomainResult = webTestClient.mutateWith(mockJwt().jwt(jwt))
+                .get()
+                .uri("/organizations/subdomains/" + subdomain)
+                .headers(addJwt(jwt))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Subdomain.class)
+                .returnResult();
+
+        assertThat(subdomainResult.getResponseBody()).isNotNull();
+        assertThat(subdomainResult.getResponseBody().getHost()).isEqualTo(subdomain);
+        assertThat(subdomainResult.getResponseBody().getId()).isNotNull();
 
         webTestClient.mutateWith(mockJwt().jwt(jwt))
                 .get()

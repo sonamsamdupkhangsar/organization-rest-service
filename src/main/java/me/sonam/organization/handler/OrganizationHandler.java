@@ -52,6 +52,19 @@ public class OrganizationHandler implements Handler {
     }
 
     @Override
+    public Mono<ServerResponse> getSubdomainByHost(ServerRequest serverRequest) {
+        LOG.info("get subdomain by host");
+
+        return organizationBehavior.getSubdomainByHost(serverRequest.pathVariable("subdomain"))
+                .flatMap(subdomain -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(subdomain))
+                .onErrorResume(throwable -> {
+                    LOG.error("get subdomain by host failed: {}", throwable.getMessage());
+                    return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(Map.of("error", throwable.getMessage()));
+                });
+    }
+
+    @Override
     public Mono<ServerResponse> getOrganizationBySubdomain(ServerRequest serverRequest) {
         LOG.info("get organization by subdomain");
 
@@ -67,11 +80,26 @@ public class OrganizationHandler implements Handler {
     @Override
     public Mono<ServerResponse> getOrganizationsBySubdomain(ServerRequest serverRequest) {
         LOG.info("get organizations by subdomain");
+        Pageable pageable = Util.getPageable(serverRequest);
 
-        return organizationBehavior.getOrganizationsBySubdomain(serverRequest.pathVariable("subdomain"))
+        return organizationBehavior.getOrganizationsBySubdomain(serverRequest.pathVariable("subdomain"), pageable)
                 .flatMap(organizations -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(organizations))
                 .onErrorResume(throwable -> {
                     LOG.error("get organizations by subdomain failed: {}", throwable.getMessage());
+                    return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(Map.of("error", throwable.getMessage()));
+                });
+    }
+
+    @Override
+    public Mono<ServerResponse> getUsersBySubdomain(ServerRequest serverRequest) {
+        LOG.info("get users by subdomain");
+        Pageable pageable = Util.getPageable(serverRequest);
+
+        return organizationBehavior.getUsersBySubdomain(serverRequest.pathVariable("subdomain"), pageable)
+                .flatMap(users -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(users))
+                .onErrorResume(throwable -> {
+                    LOG.error("get users by subdomain failed: {}", throwable.getMessage());
                     return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
                             .bodyValue(Map.of("error", throwable.getMessage()));
                 });
@@ -95,35 +123,18 @@ public class OrganizationHandler implements Handler {
     }
 
     @Override
-    public Mono<ServerResponse> canAddUserToSubdomainOrganization(ServerRequest serverRequest) {
-        LOG.info("check user can be added to subdomain organization");
+    public Mono<ServerResponse> organizationExistsInSubdomain(ServerRequest serverRequest) {
+        LOG.info("check organization exists in subdomain");
 
-        return organizationBehavior.canAddUserToSubdomainOrganization(
-                        serverRequest.pathVariable("subdomain"),
-                        UUID.fromString(serverRequest.pathVariable("userId")),
-                        UUID.fromString(serverRequest.pathVariable("organizationId")))
-                .flatMap(allowed -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(Map.of("message", allowed)))
-                .onErrorResume(throwable -> {
-                    LOG.error("check user can be added to subdomain organization failed: {}", throwable.getMessage());
-                    return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
-                            .bodyValue(Map.of("message", false, "reason", throwable.getMessage()));
-                });
-    }
-
-    @Override
-    public Mono<ServerResponse> canAddUserToSubdomainOrganizationWithoutUser(ServerRequest serverRequest) {
-        LOG.info("check organization can accept users from subdomain");
-
-        return organizationBehavior.canAddUserToSubdomainOrganization(
+        return organizationBehavior.organizationExistsInSubdomain(
                         serverRequest.pathVariable("subdomain"),
                         UUID.fromString(serverRequest.pathVariable("organizationId")))
-                .flatMap(allowed -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(Map.of("message", allowed)))
+                .flatMap(exists -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(Map.of("message", exists)))
                 .onErrorResume(throwable -> {
-                    LOG.error("check organization can accept users from subdomain failed: {}", throwable.getMessage());
-                    return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
-                            .bodyValue(Map.of("message", false, "reason", throwable.getMessage()));
+                    LOG.error("check organization exists in subdomain failed: {}", throwable.getMessage());
+                    return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(Map.of("error", throwable.getMessage()));
                 });
     }
 

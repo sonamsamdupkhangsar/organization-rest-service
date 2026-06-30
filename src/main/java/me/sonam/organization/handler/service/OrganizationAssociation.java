@@ -4,6 +4,7 @@ import me.sonam.organization.handler.OrgException;
 import me.sonam.organization.handler.OrganizationBehavior;
 import me.sonam.organization.handler.OrganizationBody;
 import me.sonam.organization.handler.OrganizationUserBody;
+import me.sonam.organization.handler.SubdomainOrganizationUser;
 import me.sonam.organization.repo.OrganizationPositionRepository;
 import me.sonam.organization.repo.OrganizationRepository;
 import me.sonam.organization.repo.OrganizationUserRepository;
@@ -72,6 +73,15 @@ public class OrganizationAssociation implements OrganizationBehavior {
     }
 
     @Override
+    public Mono<Subdomain> getSubdomainByHost(String subdomain) {
+        String normalizedSubdomain = normalizeSubdomain(subdomain);
+        LOG.info("find subdomain by host {}", normalizedSubdomain);
+
+        return subdomainRepository.findByHost(normalizedSubdomain)
+                .switchIfEmpty(Mono.error(new OrgException("No subdomain found")));
+    }
+
+    @Override
     public Mono<Organization> getOrganizationBySubdomain(String subdomain) {
         LOG.info("find organization by subdomain {}", subdomain);
         return findOrganizationsByMappedSubdomain(normalizeSubdomain(subdomain))
@@ -80,12 +90,44 @@ public class OrganizationAssociation implements OrganizationBehavior {
     }
 
     @Override
-    public Mono<List<Organization>> getOrganizationsBySubdomain(String subdomain) {
+    public Mono<Page<Organization>> getOrganizationsBySubdomain(String subdomain, Pageable pageable) {
         String normalizedSubdomain = normalizeSubdomain(subdomain);
         LOG.info("find organizations by subdomain {}", normalizedSubdomain);
 
-        return findOrganizationsByMappedSubdomain(normalizedSubdomain)
-                .collectList();
+        return subdomainRepository.findByHost(normalizedSubdomain)
+                .switchIfEmpty(Mono.error(new OrgException("No subdomain found")))
+                .flatMap(subdomainEntity -> subdomainOrganizationRepository
+                        .findBySubdomainIdOrderByCreatedAsc(subdomainEntity.getId(), pageable)
+                        .map(SubdomainOrganization::getOrganizationId)
+                        .concatMap(organizationRepository::findById)
+                        .collectList()
+                        .zipWith(subdomainOrganizationRepository.countBySubdomainId(subdomainEntity.getId()))
+                        .map(objects -> new PageImpl<>(objects.getT1(), pageable, objects.getT2())));
+    }
+
+    @Override
+    public Mono<Page<SubdomainOrganizationUser>> getUsersBySubdomain(String subdomain, Pageable pageable) {
+        String normalizedSubdomain = normalizeSubdomain(subdomain);
+        LOG.info("find users by subdomain {}", normalizedSubdomain);
+
+        return subdomainRepository.findByHost(normalizedSubdomain)
+                .switchIfEmpty(Mono.error(new OrgException("No subdomain found")))
+                .flatMap(subdomainEntity -> subdomainOrganizationRepository
+                        .findBySubdomainIdOrderByCreatedAsc(subdomainEntity.getId())
+                        .concatMap(subdomainOrganization -> organizationRepository
+                                .findById(subdomainOrganization.getOrganizationId())
+                                .flatMapMany(organization -> organizationUserRepository
+                                        .findByOrganizationId(organization.getId())
+                                        .map(organizationUser -> new SubdomainOrganizationUser(
+                                                organizationUser.getUserId(), organization.getId(), organization.getName()))))
+                        .collectList()
+                        .map(memberships -> {
+                            List<SubdomainOrganizationUser> pageContent = memberships.stream()
+                                        .skip(pageable.getOffset())
+                                        .limit(pageable.getPageSize())
+                                        .toList();
+                            return new PageImpl<SubdomainOrganizationUser>(pageContent, pageable, memberships.size());
+                        }));
     }
 
     @Override
@@ -107,19 +149,14 @@ public class OrganizationAssociation implements OrganizationBehavior {
     }
 
     @Override
-    public Mono<Boolean> canAddUserToSubdomainOrganization(String subdomain, UUID userId, UUID organizationId) {
-        LOG.info("check if user {} can be added to organization {} in subdomain {}",
-                userId, organizationId, subdomain);
-        return validateSubdomainMembershipBoundary(new OrganizationUserBody(null, organizationId, userId, null,
-                subdomain, true))
-                .thenReturn(true);
-    }
+    public Mono<Boolean> organizationExistsInSubdomain(String subdomain, UUID organizationId) {
+        String normalizedSubdomain = normalizeSubdomain(subdomain);
+        LOG.info("check if organization {} is mapped to subdomain {}", organizationId, normalizedSubdomain);
 
-    @Override
-    public Mono<Boolean> canAddUserToSubdomainOrganization(String subdomain, UUID organizationId) {
-        LOG.info("check if organization {} can accept users from subdomain {}", organizationId, subdomain);
-        return validateOrganizationMappedToSubdomain(subdomain, organizationId)
-                .thenReturn(true);
+        return subdomainRepository.findByHost(normalizedSubdomain)
+                .flatMap(subdomainEntity -> subdomainOrganizationRepository
+                        .existsBySubdomainIdAndOrganizationId(subdomainEntity.getId(), organizationId))
+                .defaultIfEmpty(false);
     }
 
     @Override

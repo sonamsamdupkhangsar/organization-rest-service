@@ -2,6 +2,7 @@ package me.sonam.organization.handler;
 
 import me.sonam.organization.repo.entity.Organization;
 import me.sonam.organization.repo.entity.OrganizationUser;
+import me.sonam.organization.repo.entity.Subdomain;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import reactor.core.publisher.Flux;
@@ -13,11 +14,12 @@ import java.util.UUID;
 public interface OrganizationBehavior {
     Mono<Page<Organization>> getOrganizationsByOwnerId(UUID ownerId, Pageable pageable);
     Mono<Organization> getOrganizationById(UUID organizationId);
+    Mono<Subdomain> getSubdomainByHost(String subdomain);
     Mono<Organization> getOrganizationBySubdomain(String subdomain);
-    Mono<List<Organization>> getOrganizationsBySubdomain(String subdomain);
+    Mono<Page<Organization>> getOrganizationsBySubdomain(String subdomain, Pageable pageable);
+    Mono<Page<SubdomainOrganizationUser>> getUsersBySubdomain(String subdomain, Pageable pageable);
     Mono<Boolean> userExistsInSubdomainOrganization(String subdomain, UUID userId, UUID organizationId);
-    Mono<Boolean> canAddUserToSubdomainOrganization(String subdomain, UUID userId, UUID organizationId);
-    Mono<Boolean> canAddUserToSubdomainOrganization(String subdomain, UUID organizationId);
+    Mono<Boolean> organizationExistsInSubdomain(String subdomain, UUID organizationId);
     Mono<List<Organization>> getOrganizationByIds(List<UUID> organizationIdList);
     Mono<Organization> createOrganization(Mono<OrganizationBody> organizationBodyMono);
     Mono<Organization> updateOrganization(Mono<OrganizationBody> organizationBodyMono);
