@@ -1,5 +1,6 @@
 package me.sonam.organization.handler.service;
 
+import me.sonam.organization.config.OrganizationUserLimitProperties;
 import me.sonam.organization.handler.OrgException;
 import me.sonam.organization.handler.OrganizationBehavior;
 import me.sonam.organization.handler.OrganizationBody;
@@ -22,12 +23,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -51,6 +56,9 @@ public class OrganizationAssociation implements OrganizationBehavior {
 
     @Autowired
     private UserDefaultOrganizationRepository userDefaultOrganizationRepository;
+
+    @Autowired
+    private OrganizationUserLimitProperties organizationUserLimitProperties;
 
     @Override
     public Mono<Page<Organization>> getOrganizationsByOwnerId(UUID ownerId, Pageable pageable) {
@@ -300,9 +308,53 @@ public class OrganizationAssociation implements OrganizationBehavior {
                         return Mono.just("user already exists in organization");
                     }
                     return validateSubdomainMembershipBoundary(organizationUserBody)
+                            .then(enforceAddedUserLimit(organizationUserBody.getOrganizationId()))
                             .then(saveOrganizationUser(organizationUserBody));
                 });
 
+    }
+
+    private Mono<Void> enforceAddedUserLimit(UUID organizationId) {
+        return currentIssuer()
+                .flatMap(issuer -> enforceAddedUserLimit(organizationId, issuer));
+    }
+
+    Mono<Void> enforceAddedUserLimit(UUID organizationId, String issuer) {
+        return Mono.just(organizationUserLimitProperties.maxAddedUsersForIssuer(issuer))
+                .zipWith(organizationRepository.findById(organizationId)
+                .switchIfEmpty(Mono.error(new OrgException("No organization found with id " + organizationId))))
+        .flatMap(objects -> {
+            int maxAddedUsers = objects.getT1();
+            Organization organization = objects.getT2();
+            return organizationUserRepository.countByOrganizationIdAndUserIdNot(
+                            organizationId, organization.getCreatorUserId())
+                    .flatMap(addedUserCount -> {
+                        LOG.info("organization {} has {} added users; maxAddedUsers {}",
+                                organizationId, addedUserCount, maxAddedUsers);
+                        if (addedUserCount >= maxAddedUsers) {
+                            return Mono.error(new OrgException("Max number of organization users reached"));
+                        }
+                        return Mono.empty();
+                    });
+        });
+    }
+
+    private Mono<String> currentIssuer() {
+        return ReactiveSecurityContextHolder.getContext()
+                .map(securityContext -> securityContext.getAuthentication())
+                .filter(Objects::nonNull)
+                .map(Authentication::getPrincipal)
+                .filter(principal -> principal instanceof Jwt)
+                .map(principal -> issuerFromJwt((Jwt) principal))
+                .defaultIfEmpty("");
+    }
+
+    private String issuerFromJwt(Jwt jwt) {
+        if (jwt.getIssuer() != null) {
+            return jwt.getIssuer().toString();
+        }
+        String issuer = jwt.getClaimAsString("iss");
+        return issuer == null ? "" : issuer;
     }
 
     @Override

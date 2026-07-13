@@ -41,6 +41,12 @@ app:
 openissuer:
   trusted-issuer-host-suffixes: ${TRUSTED_ISSUER_HOST_SUFFIXES:openissuer.test,openissuer.com}
 
+organization-user-limits:
+  default-max-added-users: ${MAX_ADDED_USERS_PER_ORGANIZATION:5}
+  hosts:
+    free.openissuer.com: ${FREE_MAX_ADDED_USERS_PER_ORGANIZATION:2}
+    demo.openissuer.com: ${DEMO_MAX_ADDED_USERS_PER_ORGANIZATION:2}
+
 permitpath:
   - path: /organizations/api/health/*
     httpMethods: GET
