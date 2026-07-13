@@ -27,6 +27,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -346,7 +347,8 @@ public class OrganizationAssociation implements OrganizationBehavior {
                 .map(Authentication::getPrincipal)
                 .filter(principal -> principal instanceof Jwt)
                 .map(principal -> issuerFromJwt((Jwt) principal))
-                .defaultIfEmpty("");
+                .filter(StringUtils::hasText)
+                .switchIfEmpty(Mono.error(new OrgException("issuer not found in security context")));
     }
 
     private String issuerFromJwt(Jwt jwt) {
