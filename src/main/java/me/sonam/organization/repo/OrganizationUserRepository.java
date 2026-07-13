@@ -18,4 +18,5 @@ public interface OrganizationUserRepository extends ReactiveCrudRepository<Organ
     Mono<OrganizationUser> findByOrganizationIdAndUserId(UUID organizationId, UUID userId);
     Mono<Integer> deleteByOrganizationIdAndUserId(UUID organizationId, UUID userId);
     Mono<Long> countByOrganizationId(UUID organizationId);
+    Mono<Long> countByOrganizationIdAndUserIdNot(UUID organizationId, UUID userId);
 }

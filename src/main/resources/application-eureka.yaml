@@ -17,6 +17,11 @@ ISSUER_URI: ${ISSUER_ADDRESS}
 OAUTH_CLIENTS: oauth-client
 JWT_SET_URI: ${ISSUER_ADDRESS}/oauth2/jwks
 
+organization-user-limits:
+  hosts:
+    free.openissuer.test: ${FREE_MAX_ADDED_USERS_PER_ORGANIZATION:2}
+    demo.openissuer.test: ${DEMO_MAX_ADDED_USERS_PER_ORGANIZATION:2}
+
 eureka:
   client:
     enabled: true
