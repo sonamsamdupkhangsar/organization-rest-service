@@ -1,6 +1,7 @@
 package me.sonam.organization;
 
 import me.sonam.organization.handler.Handler;
+import me.sonam.organization.handler.PersonalAccountMembershipHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +19,13 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 @Configuration
 public class Router {
     private static final Logger LOG = LoggerFactory.getLogger(Router.class);
+
+    @Bean
+    public RouterFunction<ServerResponse> accountDeletionRoutes(PersonalAccountMembershipHandler handler) {
+        return RouterFunctions
+                .route(DELETE("/organizations/internal/accounts/{userId}/memberships")
+                        .and(accept(MediaType.APPLICATION_JSON)), handler::removeMemberships);
+    }
 
     @Bean
     public RouterFunction<ServerResponse> route(Handler handler) {
