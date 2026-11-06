@@ -17,73 +17,73 @@ import static org.mockito.Mockito.*;
 
 class PersonalAccountMembershipTest {
     private final UUID userId = UUID.randomUUID();
-    private final OrganizationUserRepository members = mock(OrganizationUserRepository.class);
-    private final UserDefaultOrganizationRepository defaults = mock(UserDefaultOrganizationRepository.class);
-    private final InternalServiceAuthorization authorization = mock(InternalServiceAuthorization.class);
-    private final PersonalAccountMembershipHandler handler = new PersonalAccountMembershipHandler(members, defaults, authorization);
-    private final WebTestClient client = WebTestClient
-            .bindToRouterFunction(new Router().accountDeletionRoutes(handler))
+    private final OrganizationUserRepository organizationUserRepository = mock(OrganizationUserRepository.class);
+    private final UserDefaultOrganizationRepository userDefaultOrganizationRepository = mock(UserDefaultOrganizationRepository.class);
+    private final InternalServiceAuthorization internalServiceAuthorization = mock(InternalServiceAuthorization.class);
+    private final PersonalAccountMembershipHandler personalAccountMembershipHandler = new PersonalAccountMembershipHandler(organizationUserRepository, userDefaultOrganizationRepository, internalServiceAuthorization);
+    private final WebTestClient webTestClient = WebTestClient
+            .bindToRouterFunction(new Router().accountDeletionRoutes(personalAccountMembershipHandler))
             .build();
 
     @Test
     void removesOnlyMembershipsAndPersonalDefault() {
-        when(authorization.requireService())
+        when(internalServiceAuthorization.requireService())
                 .thenReturn(Mono.empty());
-        when(members.deleteByUserId(userId))
+        when(organizationUserRepository.deleteByUserId(userId))
                 .thenReturn(Mono.just(2L));
-        when(defaults.deleteById(userId))
+        when(userDefaultOrganizationRepository.deleteById(userId))
                 .thenReturn(Mono.empty());
 
-        client.delete()
+        webTestClient.delete()
                 .uri("/organizations/internal/accounts/{userId}/memberships", userId)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isNoContent()
                 .expectBody().isEmpty();
 
-        verify(members).deleteByUserId(userId);
-        verify(defaults).deleteById(userId);
-        verifyNoMoreInteractions(members, defaults);
+        verify(organizationUserRepository).deleteByUserId(userId);
+        verify(userDefaultOrganizationRepository).deleteById(userId);
+        verifyNoMoreInteractions(organizationUserRepository, userDefaultOrganizationRepository);
     }
 
     @Test
     void failedDelegationDoesNotDeleteMemberships() {
-        when(authorization.requireService())
+        when(internalServiceAuthorization.requireService())
                 .thenReturn(Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN)));
 
-        client.delete()
+        webTestClient.delete()
                 .uri("/organizations/internal/accounts/{userId}/memberships", userId)
                 .exchange()
                 .expectStatus().isForbidden();
 
-        verifyNoInteractions(members, defaults);
+        verifyNoInteractions(organizationUserRepository, userDefaultOrganizationRepository);
     }
 
     @Test
     void malformedUserIdReturnsBadRequestWithoutRepositoryAccess() {
-        when(authorization.requireService())
+        when(internalServiceAuthorization.requireService())
                 .thenReturn(Mono.empty());
 
-        client.delete()
+        webTestClient.delete()
                 .uri("/organizations/internal/accounts/not-a-uuid/memberships")
                 .exchange()
                 .expectStatus().isBadRequest();
 
-        verifyNoInteractions(members, defaults);
+        verifyNoInteractions(organizationUserRepository, userDefaultOrganizationRepository);
     }
 
     @Test
     void membershipFailureStopsDefaultCleanup() {
-        when(authorization.requireService())
+        when(internalServiceAuthorization.requireService())
                 .thenReturn(Mono.empty());
-        when(members.deleteByUserId(userId))
+        when(organizationUserRepository.deleteByUserId(userId))
                 .thenReturn(Mono.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE)));
 
-        client.delete()
+        webTestClient.delete()
                 .uri("/organizations/internal/accounts/{userId}/memberships", userId)
                 .exchange()
                 .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
 
-        verifyNoInteractions(defaults);
+        verifyNoInteractions(userDefaultOrganizationRepository);
     }
 }

@@ -14,21 +14,21 @@ import java.util.UUID;
 /** Deletes only personal memberships. Never deletes an organization or its owned records. */
 @Service
 public class PersonalAccountMembershipHandler {
-    private final OrganizationUserRepository members;
-    private final UserDefaultOrganizationRepository defaults;
-    private final InternalServiceAuthorization authorization;
+    private final OrganizationUserRepository organizationUserRepository;
+    private final UserDefaultOrganizationRepository userDefaultOrganizationRepository;
+    private final InternalServiceAuthorization internalServiceAuthorization;
 
-    public PersonalAccountMembershipHandler(OrganizationUserRepository members,
-            UserDefaultOrganizationRepository defaults, InternalServiceAuthorization authorization) {
-        this.members = members;
-        this.defaults = defaults;
-        this.authorization = authorization;
+    public PersonalAccountMembershipHandler(OrganizationUserRepository organizationUserRepository,
+            UserDefaultOrganizationRepository userDefaultOrganizationRepository, InternalServiceAuthorization internalServiceAuthorization) {
+        this.organizationUserRepository = organizationUserRepository;
+        this.userDefaultOrganizationRepository = userDefaultOrganizationRepository;
+        this.internalServiceAuthorization = internalServiceAuthorization;
     }
 
     public Mono<ServerResponse> removeMemberships(ServerRequest request) {
-        return authorization.requireService()
-                .then(Mono.defer(() -> members.deleteByUserId(userId(request))))
-                .then(Mono.defer(() -> defaults.deleteById(userId(request))))
+        return internalServiceAuthorization.requireService()
+                .then(Mono.defer(() -> organizationUserRepository.deleteByUserId(userId(request))))
+                .then(Mono.defer(() -> userDefaultOrganizationRepository.deleteById(userId(request))))
                 .then(ServerResponse.noContent().build());
     }
 

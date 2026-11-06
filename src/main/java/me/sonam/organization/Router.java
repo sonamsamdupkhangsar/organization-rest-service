@@ -21,10 +21,10 @@ public class Router {
     private static final Logger LOG = LoggerFactory.getLogger(Router.class);
 
     @Bean
-    public RouterFunction<ServerResponse> accountDeletionRoutes(PersonalAccountMembershipHandler handler) {
+    public RouterFunction<ServerResponse> accountDeletionRoutes(PersonalAccountMembershipHandler personalAccountMembershipHandler) {
         return RouterFunctions
                 .route(DELETE("/organizations/internal/accounts/{userId}/memberships")
-                        .and(accept(MediaType.APPLICATION_JSON)), handler::removeMemberships);
+                        .and(accept(MediaType.APPLICATION_JSON)), personalAccountMembershipHandler::removeMemberships);
     }
 
     @Bean
