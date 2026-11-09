@@ -9,8 +9,9 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 
 public interface OrganizationPositionRepository extends ReactiveCrudRepository<OrganizationPosition, UUID> {
+    Flux<OrganizationPosition> findByOrganizationId(UUID organizationId);
+
     Flux<OrganizationPosition> findAllBy(Pageable pageable);
     Mono<Void> deleteByIdAndOrganizationId(UUID id, UUID organizationId);
     Mono<Void> deleteByOrganizationId(UUID organizationId);
-    Mono<Long> countByOrganizationId(UUID organizationId);
 }

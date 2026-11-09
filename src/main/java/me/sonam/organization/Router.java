@@ -1,6 +1,7 @@
 package me.sonam.organization;
 
 import me.sonam.organization.handler.Handler;
+import me.sonam.organization.handler.AdminOrganizationDeletionHandler;
 import me.sonam.organization.handler.PersonalAccountMembershipHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,18 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 @Configuration
 public class Router {
     private static final Logger LOG = LoggerFactory.getLogger(Router.class);
+
+    @Bean
+    public RouterFunction<ServerResponse> adminAccountDeletionRoutes(
+            AdminOrganizationDeletionHandler adminOrganizationDeletionHandler) {
+        return RouterFunctions
+                .route(GET("/organizations/internal/admin-deletion/users/{userId}"),
+                        adminOrganizationDeletionHandler::relatedOrganizations)
+                .andRoute(GET("/organizations/internal/admin-deletion/users/{userId}/organizations/{organizationId}"),
+                        adminOrganizationDeletionHandler::inspectOrganization)
+                .andRoute(DELETE("/organizations/internal/admin-deletion/users/{userId}/organizations/{organizationId}"),
+                        adminOrganizationDeletionHandler::deleteOrganization);
+    }
 
     @Bean
     public RouterFunction<ServerResponse> accountDeletionRoutes(PersonalAccountMembershipHandler personalAccountMembershipHandler) {

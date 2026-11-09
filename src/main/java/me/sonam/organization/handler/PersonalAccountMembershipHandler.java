@@ -27,12 +27,12 @@ public class PersonalAccountMembershipHandler {
 
     public Mono<ServerResponse> removeMemberships(ServerRequest request) {
         return internalServiceAuthorization.requireService()
-                .then(Mono.defer(() -> organizationUserRepository.deleteByUserId(userId(request))))
-                .then(Mono.defer(() -> userDefaultOrganizationRepository.deleteById(userId(request))))
+                .then(Mono.defer(() -> organizationUserRepository.deleteByUserId(extractUserId(request))))
+                .then(Mono.defer(() -> userDefaultOrganizationRepository.deleteById(extractUserId(request))))
                 .then(ServerResponse.noContent().build());
     }
 
-    private UUID userId(ServerRequest request) {
+    private UUID extractUserId(ServerRequest request) {
         try {
             return UUID.fromString(request.pathVariable("userId"));
         } catch (IllegalArgumentException exception) {
