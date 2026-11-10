@@ -30,7 +30,7 @@ class AdminOrganizationDeletionTest {
 
     @Test
     void unauthorizedRequestsCannotReadOrDelete() {
-        when(internalServiceAuthorization.requireService())
+        when(internalServiceAuthorization.requireInternalServiceIdentity())
                 .thenReturn(Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN)));
         WebTestClient webTestClient = client(true, "");
 
@@ -188,7 +188,7 @@ class AdminOrganizationDeletionTest {
     }
 
     private void stubOrganization(UUID creatorId, UUID... memberIds) {
-        when(internalServiceAuthorization.requireService())
+        when(internalServiceAuthorization.requireInternalServiceIdentity())
                 .thenReturn(Mono.empty());
         when(organizationRepository.findById(organizationId))
                 .thenReturn(Mono.just(new Organization(organizationId, "Disposable organization", creatorId)));

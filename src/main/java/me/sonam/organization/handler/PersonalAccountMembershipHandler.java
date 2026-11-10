@@ -26,7 +26,7 @@ public class PersonalAccountMembershipHandler {
     }
 
     public Mono<ServerResponse> removeMemberships(ServerRequest request) {
-        return internalServiceAuthorization.requireService()
+        return internalServiceAuthorization.requireInternalServiceIdentity()
                 .then(Mono.defer(() -> organizationUserRepository.deleteByUserId(extractUserId(request))))
                 .then(Mono.defer(() -> userDefaultOrganizationRepository.deleteById(extractUserId(request))))
                 .then(ServerResponse.noContent().build());

@@ -60,7 +60,7 @@ public class AdminOrganizationDeletionHandler {
     }
 
     public Mono<ServerResponse> relatedOrganizations(ServerRequest request) {
-        return internalServiceAuthorization.requireService()
+        return internalServiceAuthorization.requireInternalServiceIdentity()
                 .then(Mono.defer(() -> {
                     UUID userId = extractId(request, "userId");
 
@@ -78,14 +78,14 @@ public class AdminOrganizationDeletionHandler {
     }
 
     public Mono<ServerResponse> inspectOrganization(ServerRequest request) {
-        return internalServiceAuthorization.requireService()
+        return internalServiceAuthorization.requireInternalServiceIdentity()
                 .then(Mono.defer(() -> inspectOrganizationRelationships(extractId(request, "organizationId"))))
                 .flatMap(this::json);
     }
 
     @Transactional
     public Mono<ServerResponse> deleteOrganization(ServerRequest request) {
-        return internalServiceAuthorization.requireService()
+        return internalServiceAuthorization.requireInternalServiceIdentity()
                 .then(Mono.defer(() -> {
                     UUID userId = extractId(request, "userId");
                     UUID organizationId = extractId(request, "organizationId");
@@ -166,7 +166,7 @@ public class AdminOrganizationDeletionHandler {
                 .bodyValue(body);
     }
 
-    public record RelatedOrganizations(UUID userId, boolean complete, Set<UUID> organizationIds) {
+    public record RelatedOrganizations(UUID userId, boolean organizationLookupCompleted, Set<UUID> organizationIds) {
     }
 
     /**

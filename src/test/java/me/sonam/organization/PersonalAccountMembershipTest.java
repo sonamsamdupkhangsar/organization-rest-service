@@ -27,7 +27,7 @@ class PersonalAccountMembershipTest {
 
     @Test
     void removesOnlyMembershipsAndPersonalDefault() {
-        when(internalServiceAuthorization.requireService())
+        when(internalServiceAuthorization.requireInternalServiceIdentity())
                 .thenReturn(Mono.empty());
         when(organizationUserRepository.deleteByUserId(userId))
                 .thenReturn(Mono.just(2L));
@@ -48,7 +48,7 @@ class PersonalAccountMembershipTest {
 
     @Test
     void failedDelegationDoesNotDeleteMemberships() {
-        when(internalServiceAuthorization.requireService())
+        when(internalServiceAuthorization.requireInternalServiceIdentity())
                 .thenReturn(Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN)));
 
         webTestClient.delete()
@@ -61,7 +61,7 @@ class PersonalAccountMembershipTest {
 
     @Test
     void malformedUserIdReturnsBadRequestWithoutRepositoryAccess() {
-        when(internalServiceAuthorization.requireService())
+        when(internalServiceAuthorization.requireInternalServiceIdentity())
                 .thenReturn(Mono.empty());
 
         webTestClient.delete()
@@ -74,7 +74,7 @@ class PersonalAccountMembershipTest {
 
     @Test
     void membershipFailureStopsDefaultCleanup() {
-        when(internalServiceAuthorization.requireService())
+        when(internalServiceAuthorization.requireInternalServiceIdentity())
                 .thenReturn(Mono.empty());
         when(organizationUserRepository.deleteByUserId(userId))
                 .thenReturn(Mono.error(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE)));
