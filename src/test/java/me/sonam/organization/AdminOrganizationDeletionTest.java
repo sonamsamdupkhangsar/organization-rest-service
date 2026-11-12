@@ -153,10 +153,45 @@ class AdminOrganizationDeletionTest {
     }
 
     @Test
+    void sharedMembersDefaultSelectionsAreValidInventoryButStillBlockDeletion() {
+        UUID secondUserId = UUID.randomUUID();
+        stubOrganization(userId, userId, secondUserId);
+        when(userDefaultOrganizationRepository.findByOrganizationId(organizationId))
+                .thenReturn(Flux.just(
+                        new UserDefaultOrganization(userId, organizationId, false),
+                        new UserDefaultOrganization(secondUserId, organizationId, false)));
+
+        client(true, "")
+                .get()
+                .uri(path())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.relationshipChecksPassed").isEqualTo(true)
+                .jsonPath("$.memberUserIds.length()").isEqualTo(2);
+
+        client(true, "")
+                .delete()
+                .uri(path())
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT);
+
+        noDeletion();
+    }
+
+    @Test
     void anotherUsersStaleDefaultSelectionIsNotSilentlyDeleted() {
         stubOrganization(userId, userId);
         when(userDefaultOrganizationRepository.findByOrganizationId(organizationId))
                 .thenReturn(Flux.just(new UserDefaultOrganization(UUID.randomUUID(), organizationId, false)));
+
+        client(true, "")
+                .get()
+                .uri(path())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.relationshipChecksPassed").isEqualTo(false);
 
         client(true, "").delete().uri(path()).exchange().expectStatus().isEqualTo(HttpStatus.CONFLICT);
 

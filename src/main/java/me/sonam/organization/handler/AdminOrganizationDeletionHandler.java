@@ -114,7 +114,7 @@ public class AdminOrganizationDeletionHandler {
 
     /**
      * Reads the organization's creator, member user IDs, and deletion-protection settings.
-     * Checks that default-organization selections belong only to the creator and that owned
+     * Checks that default-organization selections belong to current members and that owned
      * positions are not referenced by memberships in other organizations. Marks the returned
      * state incomplete if either relationship check fails. Does not modify or delete data;
      * callers use this state together with other checks to decide whether deletion is allowed.
@@ -129,9 +129,10 @@ public class AdminOrganizationDeletionHandler {
                                         .map(OrganizationUser::getUserId)
                                         .collect(Collectors.toSet()),
                                 // Multiple users can select the same organization as their default.
-                                // Block deletion if anyone other than its creator still has that reference.
+                                // Collect their IDs so valid member selections do not become inspection errors.
                                 userDefaultOrganizationRepository.findByOrganizationId(organizationId)
-                                        .all(selection -> organization.getCreatorUserId().equals(selection.getUserId())),
+                                        .map(selection -> selection.getUserId())
+                                        .collect(Collectors.toSet()),
                                 // Check positions one at a time, waiting for each membership lookup to finish.
                                 // Every membership using an owned position must belong to this organization;
                                 // the final all() returns false if any position has a cross-organization reference.
@@ -140,13 +141,14 @@ public class AdminOrganizationDeletionHandler {
                                                 .all(member -> organizationId.equals(member.getOrganizationId())))
                                         .all(Boolean.TRUE::equals))
                         // Transform the combined lookup results into a read-only OrganizationState snapshot.
-                        // Both relationship checks must pass for the snapshot to be marked complete.
-                        // T1: unique member user IDs; T2: only the creator has this organization as a default;
+                        // Default selections must belong to current members. Shared membership is valid
+                        // inventory; the coordinator reports it as a deletion blocker separately.
+                        // T1: unique member user IDs; T2: users selecting this organization as their default;
                         // T3: no owned position is referenced by a membership in another organization.
                         .map(relationships -> new OrganizationState(
                                 organizationId,
                                 organization.getCreatorUserId(),
-                                relationships.getT2() && relationships.getT3(),
+                                relationships.getT1().containsAll(relationships.getT2()) && relationships.getT3(),
                                 protectionPolicyVerified,
                                 protectedOrganizationIds.contains(organizationId),
                                 relationships.getT1())));
