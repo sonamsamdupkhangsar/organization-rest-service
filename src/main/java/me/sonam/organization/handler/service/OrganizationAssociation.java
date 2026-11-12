@@ -61,6 +61,9 @@ public class OrganizationAssociation implements OrganizationBehavior {
     @Autowired
     private OrganizationUserLimitProperties organizationUserLimitProperties;
 
+    @Autowired
+    private MemberClientRoleCleanup memberClientRoleCleanup;
+
     @Override
     public Mono<Page<Organization>> getOrganizationsByOwnerId(UUID ownerId, Pageable pageable) {
         LOG.info("get all organizations");
@@ -293,8 +296,10 @@ public class OrganizationAssociation implements OrganizationBehavior {
     public Mono<String> removeUserFromOrganization(UUID userId, UUID organizationId) {
         LOG.info("delete user {} and organization {} association", userId, organizationId);
 
-        return  userDefaultOrganizationRepository.deleteByUserIdAndOrganizationId(userId, organizationId)
-                .then(organizationUserRepository.deleteByOrganizationIdAndUserId(organizationId, userId))
+        // Preserve membership if client-role cleanup fails. Other organizations' assignments are untouched.
+        return memberClientRoleCleanup.removeMemberClientRoles(organizationId, userId)
+                .then(Mono.defer(() -> userDefaultOrganizationRepository.deleteByUserIdAndOrganizationId(userId, organizationId)))
+                .then(Mono.defer(() -> organizationUserRepository.deleteByOrganizationIdAndUserId(organizationId, userId)))
                 .thenReturn("deleted by organizationId and userId");
     }
 

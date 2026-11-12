@@ -90,6 +90,9 @@ public class OrganizationRestServiceTest {
     @MockitoBean
     ReactiveJwtDecoder jwtDecoder;
 
+    @MockitoBean
+    private me.sonam.organization.handler.service.MemberClientRoleCleanup memberClientRoleCleanup;
+
     @Before
     public void setUp() {
         LOG.info("setup mock");
@@ -155,6 +158,8 @@ public class OrganizationRestServiceTest {
     }
 
     private void removeUserFromOrganization(UUID organizationId, UUID userId, Jwt jwt) {
+        when(memberClientRoleCleanup.removeMemberClientRoles(organizationId, userId))
+                .thenReturn(Mono.empty());
         LOG.info("remove user from organization");
         webTestClient.mutateWith(mockJwt().jwt(jwt)).delete().uri("/organizations/"+organizationId+"/users/"+userId)
                 .headers(addJwt(jwt))
