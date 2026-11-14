@@ -13,6 +13,15 @@ import java.util.Map;
 public class OrganizationUserLimitProperties {
     private int defaultMaxAddedUsers = 5;
     private final Map<String, Integer> hosts = new HashMap<>();
+    private final Map<String, Integer> maxUsers = new HashMap<>();
+
+    public Map<String, Integer> getMaxUsers() {
+        return maxUsers;
+    }
+
+    public Integer configuredMaxUsersForIssuer(String issuer) {
+        return maxUsers.get(normalizeHost(issuer));
+    }
 
     public int getDefaultMaxAddedUsers() {
         return defaultMaxAddedUsers;

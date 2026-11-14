@@ -325,7 +325,18 @@ public class OrganizationAssociation implements OrganizationBehavior {
                 .flatMap(issuer -> enforceAddedUserLimit(organizationId, issuer));
     }
 
-    Mono<Void> enforceAddedUserLimit(UUID organizationId, String issuer) {
+    private Mono<Void> enforceAddedUserLimit(UUID organizationId, String issuer) {
+        Integer maxTotalUsers = organizationUserLimitProperties.configuredMaxUsersForIssuer(issuer);
+        if (maxTotalUsers != null) {
+            return organizationUserRepository.countByOrganizationId(organizationId)
+                    .flatMap(count -> {
+                        if (count >= maxTotalUsers) {
+                            LOG.warn("Organization member limit reached for organization {}", organizationId);
+                            return Mono.error(new OrgException("Organization member limit reached (including the owner)"));
+                        }
+                        return Mono.empty();
+                    });
+        }
         return Mono.just(organizationUserLimitProperties.maxAddedUsersForIssuer(issuer))
                 .zipWith(organizationRepository.findById(organizationId)
                 .switchIfEmpty(Mono.error(new OrgException("No organization found with id " + organizationId))))

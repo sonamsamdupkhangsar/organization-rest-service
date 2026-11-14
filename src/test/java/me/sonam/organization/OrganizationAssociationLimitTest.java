@@ -23,6 +23,23 @@ import static org.mockito.Mockito.when;
 class OrganizationAssociationLimitTest {
 
     @Test
+    void configuredTotalLimitIncludesOwnerAndAllowsCapacityAfterRemoval() {
+        UUID organizationId = UUID.randomUUID();
+        OrganizationUserRepository repository = mock(OrganizationUserRepository.class);
+        OrganizationUserLimitProperties properties = new OrganizationUserLimitProperties();
+        properties.getMaxUsers().put("demo.openissuer.com", 3);
+        OrganizationAssociation service = new OrganizationAssociation();
+        ReflectionTestUtils.setField(service, "organizationUserRepository", repository);
+        ReflectionTestUtils.setField(service, "organizationUserLimitProperties", properties);
+        when(repository.countByOrganizationId(organizationId)).thenReturn(Mono.just(3L));
+        StepVerifier.create(ReflectionTestUtils.<Mono<Void>>invokeMethod(service, "enforceAddedUserLimit", organizationId, "https://demo.openissuer.com/issuer"))
+                .expectError(OrgException.class).verify();
+        when(repository.countByOrganizationId(organizationId)).thenReturn(Mono.just(2L));
+        StepVerifier.create(ReflectionTestUtils.<Mono<Void>>invokeMethod(service, "enforceAddedUserLimit", organizationId, "https://demo.openissuer.com/issuer"))
+                .verifyComplete();
+    }
+
+    @Test
     void enforceAddedUserLimitFailsWhenDemoIssuerReachesLimit() {
         UUID creatorUserId = UUID.randomUUID();
         UUID organizationId = UUID.randomUUID();
@@ -43,7 +60,7 @@ class OrganizationAssociationLimitTest {
         ReflectionTestUtils.setField(organizationAssociation, "organizationUserRepository", organizationUserRepository);
         ReflectionTestUtils.setField(organizationAssociation, "organizationUserLimitProperties", properties);
 
-        StepVerifier.create(organizationAssociation.enforceAddedUserLimit(
+        StepVerifier.create(ReflectionTestUtils.<Mono<Void>>invokeMethod(organizationAssociation, "enforceAddedUserLimit",
                         organizationId, "https://demo.openissuer.com"))
                 .expectErrorSatisfies(throwable -> {
                     assertThat(throwable).isInstanceOf(OrgException.class);
