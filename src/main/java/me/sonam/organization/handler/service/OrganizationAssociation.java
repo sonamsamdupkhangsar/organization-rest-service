@@ -2,6 +2,7 @@ package me.sonam.organization.handler.service;
 
 import me.sonam.organization.config.OrganizationUserLimitProperties;
 import me.sonam.organization.handler.OrgException;
+import me.sonam.organization.handler.OrganizationMemberLimitException;
 import me.sonam.organization.handler.OrganizationBehavior;
 import me.sonam.organization.handler.OrganizationBody;
 import me.sonam.organization.handler.OrganizationUserBody;
@@ -332,7 +333,7 @@ public class OrganizationAssociation implements OrganizationBehavior {
                     .flatMap(count -> {
                         if (count >= maxTotalUsers) {
                             LOG.warn("Organization member limit reached for organization {}", organizationId);
-                            return Mono.error(new OrgException("Organization member limit reached (including the owner)"));
+                            return Mono.error(new OrganizationMemberLimitException());
                         }
                         return Mono.empty();
                     });
@@ -349,7 +350,7 @@ public class OrganizationAssociation implements OrganizationBehavior {
                         LOG.info("organization {} has {} added users; maxAddedUsers {}",
                                 organizationId, addedUserCount, maxAddedUsers);
                         if (addedUserCount >= maxAddedUsers) {
-                            return Mono.error(new OrgException("Max number of organization users reached"));
+                            return Mono.error(new OrganizationMemberLimitException());
                         }
                         return Mono.empty();
                     });

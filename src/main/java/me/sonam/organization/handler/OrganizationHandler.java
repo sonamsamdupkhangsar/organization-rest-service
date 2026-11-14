@@ -289,6 +289,11 @@ public class OrganizationHandler implements Handler {
                         })
                         .onErrorResume(throwable -> {
                             LOG.error("add user to organization failed: {}", throwable.getMessage());
+                            if (throwable instanceof OrganizationMemberLimitException) {
+                                return ServerResponse.status(409).contentType(MediaType.APPLICATION_JSON)
+                                        .bodyValue(Map.of("code", OrganizationMemberLimitException.CODE,
+                                                "error", "Organization member limit reached (including the owner)"));
+                            }
                             return ServerResponse.badRequest().contentType(MediaType.APPLICATION_JSON)
                                     .bodyValue(Map.of("error", throwable.getMessage()));
                         });
